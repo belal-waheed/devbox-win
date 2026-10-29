@@ -51,8 +51,10 @@
 Open Windows Terminal or PowerShell and run:
 
 ```powershell
-irm https://raw.githubusercontent.com/<your-username>/devbox-win/main/bootstrap.ps1 | iex
+Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | Invoke-Expression
 ```
+
+*(Or via short alias: `irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex`)*
 
 ### Local Execution
 Clone your fork locally and run:
@@ -605,7 +607,7 @@ All pull requests must satisfy our mandatory quality gates:
 4. **Push your changes** to your `main` branch.
 5. **Run your one-liner on any fresh Windows 11 machine**:
    ```powershell
-   irm https://raw.githubusercontent.com/<your-username>/devbox-win/main/bootstrap.ps1 | iex
+   Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | Invoke-Expression
    ```
 
 ---

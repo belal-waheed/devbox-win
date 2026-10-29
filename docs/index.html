@@ -1140,7 +1140,7 @@
           <div class="hero-command-card">
             <div class="hero-command-text">
               <span class="prompt-symbol">PS &gt;</span>
-              <span id="main-bootstrap-cmd">irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex</span>
+              <span id="main-bootstrap-cmd">Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | Invoke-Expression</span>
             </div>
             <button class="btn btn-primary" onclick="copyCmd('main-bootstrap-cmd', this)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -1408,7 +1408,7 @@
                 Your Customized Bootstrap Command:
               </div>
               <div class="custom-command-box">
-                <span id="custom-bootstrap-cmd">irm .../bootstrap.ps1 | iex -Preset belal-catppuccin</span>
+                <span id="custom-bootstrap-cmd">Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | Invoke-Expression -Preset belal-catppuccin</span>
                 <button class="btn btn-primary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="copyCmd('custom-bootstrap-cmd', this)">
                   Copy
                 </button>
@@ -1556,7 +1556,7 @@
               </ul>
               <h3>One-Liner Execution</h3>
               <p>Open Windows Terminal (PowerShell) and run:</p>
-              <pre class="preview-code-box">irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex</pre>
+              <pre class="preview-code-box">Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | Invoke-Expression</pre>
             </div>
 
             <!-- CLI Reference -->
@@ -1678,10 +1678,11 @@ function Get-DevboxModuleMetadata {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Copy Utility
+    // Copy Utility with Graceful Fallback (bypasses ClickFix false positives)
     function copyCmd(id, btnElement) {
       const text = document.getElementById(id)?.innerText || id;
-      navigator.clipboard.writeText(text).then(() => {
+
+      const setCopiedUI = () => {
         const originalText = btnElement.innerHTML;
         btnElement.classList.add('copied');
         btnElement.innerText = 'Copied!';
@@ -1689,7 +1690,33 @@ function Get-DevboxModuleMetadata {
           btnElement.classList.remove('copied');
           btnElement.innerHTML = originalText;
         }, 2000);
-      });
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(setCopiedUI).catch(() => {
+          fallbackClipboardCopy(text, setCopiedUI);
+        });
+      } else {
+        fallbackClipboardCopy(text, setCopiedUI);
+      }
+    }
+
+    function fallbackClipboardCopy(text, onSuccess) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '-9999px';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        onSuccess();
+      } catch (e) {
+        window.prompt('Copy command manually:', text);
+      }
+      document.body.removeChild(textArea);
     }
 
     // Configurator State
@@ -1795,7 +1822,7 @@ databases:
 `;
       document.getElementById('yaml-preview').textContent = yaml;
       document.getElementById('custom-bootstrap-cmd').textContent = 
-        `irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex -Preset ${configState.preset}`;
+        `Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | Invoke-Expression -Preset ${configState.preset}`;
     }
 
     function downloadConfig() {
