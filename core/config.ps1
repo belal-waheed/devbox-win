@@ -7,6 +7,25 @@
 
 Set-StrictMode -Version Latest
 
+function Get-DevboxCustomInstallLocation {
+    param([System.Collections.IDictionary]$Config)
+
+    if ($null -eq $Config) { return "" }
+    if ($Config.Contains("paths") -and ($null -ne $Config["paths"])) {
+        $p = $Config["paths"]
+        if ($p -is [System.Collections.IDictionary] -and $p.Contains("apps") -and ($null -ne $p["apps"])) {
+            return [string]$p["apps"]
+        }
+        if ($p -is [PSCustomObject] -and ($null -ne $p.apps)) {
+            return [string]$p.apps
+        }
+    }
+    if ($Config.Contains("install_location") -and ($null -ne $Config["install_location"])) {
+        return [string]$Config["install_location"]
+    }
+    return ""
+}
+
 function ConvertFrom-SimpleYaml {
     param([string]$YamlText)
 
@@ -358,18 +377,12 @@ function Export-DevboxConfigToYamlFile {
     [void]$sb.AppendLine("preset: $($Config.preset)")
     [void]$sb.AppendLine("")
 
-    if ($Config.Contains("paths") -and ($null -ne $Config.paths) -and $Config.paths.Contains("apps") -and $Config.paths.apps) {
+    $customPath = Get-DevboxCustomInstallLocation -Config $Config
+    if (-not [string]::IsNullOrWhiteSpace($customPath)) {
         [void]$sb.AppendLine("paths:")
-        [void]$sb.AppendLine("  apps: `"$($Config.paths.apps)`"")
+        [void]$sb.AppendLine("  apps: `"$customPath`"")
         [void]$sb.AppendLine("")
-    } elseif ($Config.Contains("install_location") -and $Config.install_location) {
-        [void]$sb.AppendLine("paths:")
-        [void]$sb.AppendLine("  apps: `"$($Config.install_location)`"")
-        [void]$sb.AppendLine("")
-    }
-
-    if ($Config.Contains("install_location") -and $Config.install_location) {
-        [void]$sb.AppendLine("install_location: `"$($Config.install_location)`"")
+        [void]$sb.AppendLine("install_location: `"$customPath`"")
         [void]$sb.AppendLine("")
     }
 

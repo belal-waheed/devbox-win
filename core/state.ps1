@@ -135,6 +135,25 @@ function Test-DevboxPackageInstalledFast {
     return $false
 }
 
+function Get-DevboxCustomInstallLocation {
+    param([System.Collections.IDictionary]$Config)
+
+    if ($null -eq $Config) { return "" }
+    if ($Config.Contains("paths") -and ($null -ne $Config["paths"])) {
+        $p = $Config["paths"]
+        if ($p -is [System.Collections.IDictionary] -and $p.Contains("apps") -and ($null -ne $p["apps"])) {
+            return [string]$p["apps"]
+        }
+        if ($p -is [PSCustomObject] -and ($null -ne $p.apps)) {
+            return [string]$p.apps
+        }
+    }
+    if ($Config.Contains("install_location") -and ($null -ne $Config["install_location"])) {
+        return [string]$Config["install_location"]
+    }
+    return ""
+}
+
 function Install-DevboxWingetPackage {
     [CmdletBinding()]
     param(
@@ -150,7 +169,14 @@ function Install-DevboxWingetPackage {
         if (Get-Command "Write-DevboxSkip" -ErrorAction SilentlyContinue) {
             Write-DevboxSkip $PackageId "Already installed"
         }
-        return @{ Success = $true; Skipped = $true }
+        return [PSCustomObject]@{
+            Success  = $true
+            Skipped  = $true
+            DryRun   = [bool]$DryRun
+            ExitCode = 0
+            TimedOut = $false
+            Location = $Location
+        }
     }
 
     if ($DryRun) {
@@ -160,7 +186,14 @@ function Install-DevboxWingetPackage {
         } else {
             Write-Host "  [OK] [DRY-RUN] Would install $PackageId via winget$locMsg"
         }
-        return @{ Success = $true; DryRun = $true; Location = $Location }
+        return [PSCustomObject]@{
+            Success  = $true
+            Skipped  = $false
+            DryRun   = $true
+            ExitCode = 0
+            TimedOut = $false
+            Location = $Location
+        }
     }
 
     $baseArgs = @("install", "--id", $PackageId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements")
@@ -199,7 +232,14 @@ function Install-DevboxWingetPackage {
         if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
             Write-DevboxFail "Package $PackageId installation timed out (circuit breaker triggered)"
         }
-        return @{ Success = $false; ExitCode = -1; TimedOut = $true }
+        return [PSCustomObject]@{
+            Success  = $false
+            Skipped  = $false
+            DryRun   = [bool]$DryRun
+            ExitCode = -1
+            TimedOut = $true
+            Location = $Location
+        }
     }
 
     $exitCode = $execRes.ExitCode
@@ -216,7 +256,14 @@ function Install-DevboxWingetPackage {
             if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
                 Write-DevboxFail "Package $PackageId installation timed out on retry (circuit breaker triggered)"
             }
-            return @{ Success = $false; ExitCode = -1; TimedOut = $true }
+            return [PSCustomObject]@{
+                Success  = $false
+                Skipped  = $false
+                DryRun   = [bool]$DryRun
+                ExitCode = -1
+                TimedOut = $true
+                Location = $Location
+            }
         }
         $exitCode = $execRes.ExitCode
     }
@@ -234,18 +281,39 @@ function Install-DevboxWingetPackage {
         if ($null -ne $global:DevboxInstalledPackageCache) {
             $global:DevboxInstalledPackageCache.Add($PackageId) | Out-Null
         }
-        return @{ Success = $true; Skipped = $false }
+        return [PSCustomObject]@{
+            Success  = $true
+            Skipped  = $false
+            DryRun   = [bool]$DryRun
+            ExitCode = 0
+            TimedOut = $false
+            Location = $Location
+        }
     } elseif ($exitCode -eq -1978335189) {
         if (Get-Command "Write-DevboxSkip" -ErrorAction SilentlyContinue) {
             Write-DevboxSkip $PackageId "Already installed"
         }
-        return @{ Success = $true; Skipped = $true }
+        return [PSCustomObject]@{
+            Success  = $true
+            Skipped  = $true
+            DryRun   = [bool]$DryRun
+            ExitCode = $exitCode
+            TimedOut = $false
+            Location = $Location
+        }
     } else {
         $detail = if ($execRes.ContainsKey("Error")) { $execRes.Error } else { "" }
         if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
             Write-DevboxFail "Failed to install: $PackageId (Exit code: $exitCode)" $detail
         }
-        return @{ Success = $false; ExitCode = $exitCode }
+        return [PSCustomObject]@{
+            Success  = $false
+            Skipped  = $false
+            DryRun   = [bool]$DryRun
+            ExitCode = $exitCode
+            TimedOut = $false
+            Location = $Location
+        }
     }
 }
 

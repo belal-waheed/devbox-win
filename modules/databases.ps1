@@ -64,7 +64,7 @@ function Invoke-DevboxDatabasesModule {
 
     Write-DevboxInfo "Evaluating $($dbList.Count) database client(s) and toolchain(s)..."
 
-    $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+    $installLoc = Get-DevboxCustomInstallLocation -Config $Config
 
     foreach ($dbItem in $dbList) {
         if (-not $dbItem) { continue }

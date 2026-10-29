@@ -45,7 +45,7 @@ function Invoke-DevboxRuntimesModule {
     $skippedCount   = 0
     $failedCount    = 0
 
-    $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+    $installLoc = Get-DevboxCustomInstallLocation -Config $Config
 
     # 0. Git
     if ($runtimes.Contains("git") -and ($null -ne $runtimes["git"])) {

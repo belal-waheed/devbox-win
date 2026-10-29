@@ -61,7 +61,7 @@ function Invoke-DevboxGlazewmModule {
             Write-DevboxSkip "GlazeWM" "GlazeWM executable already present at '$exePath'"
             $skippedCount++
         } else {
-            $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+            $installLoc = Get-DevboxCustomInstallLocation -Config $Config
             $res = Install-DevboxWingetPackage -PackageId $pkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
             if ($res.Skipped) {
                 $skippedCount++

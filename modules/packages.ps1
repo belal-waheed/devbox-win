@@ -71,7 +71,7 @@ function Invoke-DevboxPackagesModule {
     # Pre-populate installed set via session-wide cache for instant batch lookup
     $installedSet = Get-DevboxInstalledPackageSet
 
-    $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+    $installLoc = Get-DevboxCustomInstallLocation -Config $Config
 
     foreach ($pkg in $packages) {
         if (-not $pkg) { continue }

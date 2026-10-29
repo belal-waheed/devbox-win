@@ -97,7 +97,7 @@ function Invoke-DevboxKeybindingsModule {
     $ahkEnabled       = if ($keyConfig.Contains("autohotkey")) { [bool]$keyConfig["autohotkey"] } else { $false }
     $startupEnabled   = if ($keyConfig.Contains("startup_script")) { [bool]$keyConfig["startup_script"] } else { $ahkEnabled }
 
-    $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+    $installLoc = Get-DevboxCustomInstallLocation -Config $Config
 
     # 1. PowerToys
     if ($powertoysEnabled) {
