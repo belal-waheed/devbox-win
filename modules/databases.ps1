@@ -13,6 +13,7 @@ param(
 Set-StrictMode -Version Latest
 
 . (Join-Path $PSScriptRoot "..\core\logger.ps1")
+. (Join-Path $PSScriptRoot "..\core\state.ps1")
 . (Join-Path $PSScriptRoot "..\core\manifest.ps1")
 
 function Test-DatabaseBinaryOrPackageInstalled([string]$PackageId) {
@@ -32,17 +33,8 @@ function Test-DatabaseBinaryOrPackageInstalled([string]$PackageId) {
         }
     }
 
-    # Check winget list
-    try {
-        $result = & winget list --id $PackageId --exact --accept-source-agreements 2>$null | Out-String
-        if ($result -match [regex]::Escape($PackageId)) {
-            return $true
-        }
-    } catch {
-        # Fall through
-    }
-
-    return $false
+    # Fast cache lookup from session winget cache before falling back
+    return Test-DevboxPackageInstalledFast -PackageId $PackageId -CheckCliFallback
 }
 
 function Invoke-DevboxDatabasesModule {

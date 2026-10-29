@@ -417,10 +417,17 @@ foreach ($modName in $executionOrder) {
     }
 
     try {
-        $result = & $modDef.Script -Config $config -DryRun:$DryRun
+        $rawOutput = @(& $modDef.Script -Config $config -DryRun:$DryRun)
         $status = "OK"
         $msg    = ""
         $needsReboot = $false
+
+        # Isolate the structured result object from any stdout/pipeline noise
+        $result = $rawOutput | Where-Object {
+            $null -ne $_ -and
+            $_.GetType().FullName -ne "System.String" -and
+            ($_.PSObject.Properties.Match('Status').Count -gt 0)
+        } | Select-Object -Last 1
 
         if ($null -ne $result) {
             if ($result.PSObject.Properties['Status']) {

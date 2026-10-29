@@ -364,7 +364,14 @@ $glazeConfigText = Get-Content -Path $glazeConfigPath -Raw -Encoding utf8
 Assert-True ($glazeConfigText -match 'hide_method:\s*"cloak"') "GlazeWM config features DWM cloaking"
 Assert-True ($glazeConfigText -match '#cba6f7') "GlazeWM config features Catppuccin lavender border"
 
-# Test 15: AST Syntax Check on all ps1 files
+# Test 15: Session Package Cache and Atomic Persistence
+Write-DevboxSection "Test: Session Package Cache and Persistence"
+$pkgSet = Get-DevboxInstalledPackageSet
+Assert-True ($null -ne $pkgSet) "Package cache initializes successfully"
+$testFastPkg = Test-DevboxPackageInstalledFast -PackageId "NonExistentPackage_99999"
+Assert-True ($testFastPkg -eq $false) "Fast package test handles missing packages gracefully"
+
+# Test 16: AST Syntax Check on all ps1 files
 Write-DevboxSection "Test: PowerShell AST Syntax Validation"
 $allScripts = Get-ChildItem -Path $projectRoot -Filter "*.ps1" -Recurse
 foreach ($s in $allScripts) {

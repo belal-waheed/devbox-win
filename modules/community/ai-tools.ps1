@@ -14,6 +14,7 @@ param(
 Set-StrictMode -Version Latest
 
 . (Join-Path $PSScriptRoot "..\..\core\logger.ps1")
+. (Join-Path $PSScriptRoot "..\..\core\state.ps1")
 . (Join-Path $PSScriptRoot "..\..\core\manifest.ps1")
 
 function Get-ModuleMetadata {
@@ -45,16 +46,7 @@ function Test-AiPackageInstalled([string]$PackageId) {
         }
     }
 
-    try {
-        $result = & winget list --id $PackageId --exact --accept-source-agreements 2>$null | Out-String
-        if ($result -match [regex]::Escape($PackageId)) {
-            return $true
-        }
-    } catch {
-        # Fall through
-    }
-
-    return $false
+    return Test-DevboxPackageInstalledFast -PackageId $PackageId -CheckCliFallback
 }
 
 function Test-TargetState {

@@ -13,6 +13,7 @@ param(
 Set-StrictMode -Version Latest
 
 . (Join-Path $PSScriptRoot "..\core\logger.ps1")
+. (Join-Path $PSScriptRoot "..\core\state.ps1")
 . (Join-Path $PSScriptRoot "..\core\manifest.ps1")
 
 # Curated Package Catalog
@@ -37,16 +38,7 @@ $script:PackageCatalog = @(
 
 function Test-WingetPackageInstalled {
     param([string]$PackageId)
-
-    try {
-        $result = & winget list --id $PackageId --exact --accept-source-agreements 2>$null | Out-String
-        if ($result -match [regex]::Escape($PackageId)) {
-            return $true
-        }
-    } catch {
-        # Fall through to false
-    }
-    return $false
+    return Test-DevboxPackageInstalledFast -PackageId $PackageId -CheckCliFallback
 }
 
 function Invoke-DevboxPackagesModule {
@@ -76,35 +68,14 @@ function Invoke-DevboxPackagesModule {
 
     Write-DevboxInfo "Evaluating $($packages.Count) winget packages..."
 
-    # Pre-populate installed set via single-pass winget list for fast batch lookup
-    $installedSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    try {
-        $lines = & winget list --accept-source-agreements 2>$null
-        if ($lines -and $lines.Count -gt 1) {
-            $header = $lines[0]
-            $idIdx = $header.IndexOf("Id")
-            $verIdx = $header.IndexOf("Version")
-            if ($idIdx -ge 0 -and $verIdx -gt $idIdx) {
-                foreach ($l in $lines | Select-Object -Skip 2) {
-                    if ($l.Length -gt $verIdx) {
-                        $rawId = $l.Substring($idIdx, ($verIdx - $idIdx)).Trim()
-                        if ($rawId) { [void]$installedSet.Add($rawId) }
-                    }
-                }
-            }
-        }
-    } catch {
-        # Fall back to individual checks
-    }
+    # Pre-populate installed set via session-wide cache for instant batch lookup
+    $installedSet = Get-DevboxInstalledPackageSet
 
     foreach ($pkg in $packages) {
         if (-not $pkg) { continue }
         $pkgId = $pkg.ToString().Trim()
 
-        $isInstalled = $installedSet.Contains($pkgId)
-        if (-not $isInstalled) {
-            $isInstalled = Test-WingetPackageInstalled -PackageId $pkgId
-        }
+        $isInstalled = Test-WingetPackageInstalled -PackageId $pkgId
 
         if ($isInstalled) {
             Write-DevboxSkip $pkgId "Already installed"

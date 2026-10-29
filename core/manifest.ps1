@@ -50,7 +50,9 @@ function Save-DevboxManifest {
     $Manifest["updatedAt"] = (Get-Date -Format "o")
     $path = Get-DevboxManifestPath
     $json = $Manifest | ConvertTo-Json -Depth 10
-    Set-Content -Path $path -Value $json -Encoding utf8
+    $tmpPath = "$path.tmp.$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
+    Set-Content -Path $tmpPath -Value $json -Encoding utf8
+    Move-Item -Path $tmpPath -Destination $path -Force
 }
 
 function Add-DevboxManifestSymlink {

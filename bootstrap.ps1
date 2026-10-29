@@ -192,8 +192,12 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "core\engine.ps1"))) 
         }
     } else {
         Write-BootInfo "Bootstrapping repository to $workDir..."
-        if (-not (Test-Path $workDir)) {
-            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        if (Test-Path $workDir) {
+            # If the directory exists but does not contain the core engine, clean the broken residue
+            if (-not (Test-Path (Join-Path $workDir "core\engine.ps1"))) {
+                Write-BootWarn "Found incomplete directory at $workDir. Resetting for clean bootstrap..."
+                Remove-Item -Path $workDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
 
         if (Get-Command "git" -ErrorAction SilentlyContinue) {

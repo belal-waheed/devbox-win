@@ -55,7 +55,69 @@ function Save-DevboxState {
     $State["lastRunAt"] = (Get-Date -Format "o")
     $statePath = Get-DevboxStatePath
     $json = $State | ConvertTo-Json -Depth 10
-    Set-Content -Path $statePath -Value $json -Encoding utf8
+    $tmpPath = "$statePath.tmp.$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
+    Set-Content -Path $tmpPath -Value $json -Encoding utf8
+    Move-Item -Path $tmpPath -Destination $statePath -Force
+}
+
+$global:DevboxInstalledPackageCache = $null
+
+function Get-DevboxInstalledPackageSet {
+    param([switch]$ForceRefresh)
+
+    if ($null -ne $global:DevboxInstalledPackageCache -and (-not $ForceRefresh)) {
+        return $global:DevboxInstalledPackageCache
+    }
+
+    $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if (Get-Command "winget" -ErrorAction SilentlyContinue) {
+        try {
+            $lines = & winget list --accept-source-agreements 2>$null
+            if ($lines) {
+                foreach ($line in $lines) {
+                    $trim = $line.Trim()
+                    if ($trim.Length -gt 0) {
+                        $tokens = $trim -split '\s{2,}'
+                        if ($tokens.Count -ge 2) {
+                            $candidateId = $tokens[1].Trim()
+                            if ($candidateId -match '^[a-zA-Z0-9_\.-]+$') {
+                                [void]$set.Add($candidateId)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch {
+            # Graceful fallback on winget errors
+        }
+    }
+
+    $global:DevboxInstalledPackageCache = $set
+    return $set
+}
+
+function Test-DevboxPackageInstalledFast {
+    param(
+        [Parameter(Mandatory=$true)][string]$PackageId,
+        [switch]$CheckCliFallback
+    )
+
+    $set = Get-DevboxInstalledPackageSet
+    if ($set.Contains($PackageId)) {
+        return $true
+    }
+
+    if ($CheckCliFallback -and (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+        try {
+            $result = & winget list --id $PackageId --exact --accept-source-agreements 2>$null | Out-String
+            if ($result -match [regex]::Escape($PackageId)) {
+                [void]$set.Add($PackageId)
+                return $true
+            }
+        } catch { }
+    }
+
+    return $false
 }
 
 function Set-DevboxModuleResult {
