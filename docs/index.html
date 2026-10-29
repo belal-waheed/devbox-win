@@ -1098,7 +1098,7 @@
           <div class="hero-command-card">
             <div class="hero-command-text">
               <span class="prompt-symbol">PS &gt;</span>
-              <span id="main-bootstrap-cmd">irm https://raw.githubusercontent.com/belal-waheed/devbox-win/master/bootstrap.ps1 | iex</span>
+              <span id="main-bootstrap-cmd">irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex</span>
             </div>
             <button class="btn btn-primary" onclick="copyCmd('main-bootstrap-cmd', this)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -1514,7 +1514,7 @@
               </ul>
               <h3>One-Liner Execution</h3>
               <p>Open Windows Terminal (PowerShell) and run:</p>
-              <pre class="preview-code-box">irm https://raw.githubusercontent.com/belal-waheed/devbox-win/master/bootstrap.ps1 | iex</pre>
+              <pre class="preview-code-box">irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex</pre>
             </div>
 
             <!-- CLI Reference -->
@@ -1755,7 +1755,7 @@ databases:
 `;
       document.getElementById('yaml-preview').textContent = yaml;
       document.getElementById('custom-bootstrap-cmd').textContent = 
-        `irm https://raw.githubusercontent.com/belal-waheed/devbox-win/master/bootstrap.ps1 | iex -Preset ${configState.preset}`;
+        `irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex -Preset ${configState.preset}`;
     }
 
     function downloadConfig() {
