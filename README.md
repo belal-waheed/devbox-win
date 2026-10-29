@@ -1,17 +1,21 @@
-```
-  ____  _______     ______   _____  __  __        _____ _   _ 
- |  _ \| ____\ \   / / __ ) / _ \ \/ /  \ \      / /_ _| \ | |
- | | | |  _|  \ \ / /|  _ \| | | \  /____\ \ /\ / / | ||  \| |
- | |_| | |___  \ V / | |_) | |_| /  \_____\ V  V /  | || |\  |
- |____/|_____|  \_/  |____/ \___/_/\_\     \_/\_/  |___|_| \_|
-```
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="devbox-win logo" width="96" height="96">
+</p>
 
-# devbox-win
+<h1 align="center">devbox-win</h1>
 
-[![CI/CD Workstation Verification](https://github.com/bel/devbox-win/actions/workflows/ci.yml/badge.svg)](https://github.com/bel/devbox-win/actions)
+<p align="center">
+  <strong>Native Windows 11 Developer Machine Provisioner</strong><br>
+  Zero-dependency declarative YAML &bull; Kahn's DAG topological engine &bull; Unprivileged symlinks &bull; Curated GlazeWM, Zebar &amp; Zed rice
+</p>
 
-> **One command. Fully configured Windows 11 development machine.**
-> Declarative, module-based, idempotent developer environment provisioning in pure PowerShell 7+.
+<p align="center">
+  <a href="https://github.com/belal-waheed/devbox-win/actions"><img src="https://github.com/belal-waheed/devbox-win/actions/workflows/ci.yml/badge.svg" alt="CI/CD"></a>
+  <a href="https://belal-waheed.github.io/devbox-win/"><img src="https://img.shields.io/badge/Studio-Interactive%20Configurator-cba6f7?style=flat" alt="Studio Live"></a>
+  <img src="https://img.shields.io/badge/tests-148%20passed-3fb950" alt="148 Tests Passing">
+  <img src="https://img.shields.io/badge/windows-11%20Build%2022000+-0078d4" alt="Windows 11">
+  <a href="#license"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+</p>
 
 ---
 

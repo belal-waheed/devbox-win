@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <defs>
+    <linearGradient id="ogBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="50%" stop-color="#161b22"/>
+      <stop offset="100%" stop-color="#0a0d12"/>
+    </linearGradient>
+    <linearGradient id="ogPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cba6f7"/>
+      <stop offset="100%" stop-color="#b4befe"/>
+    </linearGradient>
+    <linearGradient id="ogCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#89dceb"/>
+      <stop offset="100%" stop-color="#74c7ec"/>
+    </linearGradient>
+    <radialGradient id="ogGlow" cx="50%" cy="30%" r="50%">
+      <stop offset="0%" stop-color="#cba6f7" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#cba6f7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#ogBg)"/>
+  <rect width="1200" height="630" fill="url(#ogGlow)"/>
+
+  <!-- Subtle Engineering Grid Lines -->
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="1">
+    <line x1="0" y1="105" x2="1200" y2="105"/>
+    <line x1="0" y1="210" x2="1200" y2="210"/>
+    <line x1="0" y1="315" x2="1200" y2="315"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/>
+    <line x1="0" y1="525" x2="1200" y2="525"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+  </g>
+
+  <!-- Header Badge -->
+  <g transform="translate(100, 80)">
+    <rect width="380" height="36" rx="18" fill="#1e1e2e" stroke="#313244" stroke-width="1"/>
+    <circle cx="20" cy="18" r="5" fill="#3fb950"/>
+    <text x="36" y="23" font-family="'Inter', sans-serif" font-weight="600" font-size="13" fill="#cba6f7" letter-spacing="0.05em">
+      NATIVE WINDOWS 11 PROVISIONER
+    </text>
+  </g>
+
+  <!-- Title & Headline -->
+  <g transform="translate(100, 190)">
+    <text x="0" y="0" font-family="'Inter', sans-serif" font-weight="800" font-size="64" fill="#f0f6fc" letter-spacing="-0.03em">
+      devbox<tspan fill="url(#ogPurple)">-win</tspan>
+    </text>
+    <text x="0" y="56" font-family="'Inter', sans-serif" font-weight="500" font-size="28" fill="#94a3b8" letter-spacing="-0.01em">
+      Your entire Windows dev machine. Configured in one command.
+    </text>
+  </g>
+
+  <!-- One-Liner Terminal Bar -->
+  <g transform="translate(100, 310)">
+    <rect width="1000" height="74" rx="14" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+    <text x="32" y="46" font-family="'Fira Code', monospace" font-size="20" font-weight="500" fill="#f0f6fc">
+      <tspan fill="#cba6f7" font-weight="700">PS &gt; </tspan>irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex
+    </text>
+  </g>
+
+  <!-- Feature Pills Footer -->
+  <g transform="translate(100, 440)">
+    <!-- Pill 1 -->
+    <g transform="translate(0, 0)">
+      <rect width="210" height="48" rx="8" fill="#1a202c" stroke="#2d3748" stroke-width="1"/>
+      <text x="24" y="30" font-family="'Inter', sans-serif" font-weight="600" font-size="15" fill="#cdd6f4">Kahn's DAG Engine</text>
+    </g>
+    <!-- Pill 2 -->
+    <g transform="translate(226, 0)">
+      <rect width="230" height="48" rx="8" fill="#1a202c" stroke="#2d3748" stroke-width="1"/>
+      <text x="24" y="30" font-family="'Inter', sans-serif" font-weight="600" font-size="15" fill="#cdd6f4">Unprivileged Symlinks</text>
+    </g>
+    <!-- Pill 3 -->
+    <g transform="translate(472, 0)">
+      <rect width="230" height="48" rx="8" fill="#1a202c" stroke="#2d3748" stroke-width="1"/>
+      <text x="24" y="30" font-family="'Inter', sans-serif" font-weight="600" font-size="15" fill="#cdd6f4">GlazeWM &amp; Zebar Rice</text>
+    </g>
+    <!-- Pill 4 -->
+    <g transform="translate(718, 0)">
+      <rect width="210" height="48" rx="8" fill="#1a202c" stroke="#2d3748" stroke-width="1"/>
+      <text x="24" y="30" font-family="'Inter', sans-serif" font-weight="600" font-size="15" fill="#cdd6f4">First-Class Zed Editor</text>
+    </g>
+  </g>
+
+  <!-- Bottom Details -->
+  <g transform="translate(100, 560)">
+    <text x="0" y="0" font-family="'Fira Code', monospace" font-size="14" fill="#64748b">
+      PowerShell 7+ Native &bull; Windows 11 Build 22000+ &bull; Zero External Dependencies &bull; MIT License
+    </text>
+  </g>
+</svg>

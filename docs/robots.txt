@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://belal-waheed.github.io/devbox-win/sitemap.xml

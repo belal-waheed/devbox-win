@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e2e"/>
+      <stop offset="100%" stop-color="#11111b"/>
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cba6f7"/>
+      <stop offset="100%" stop-color="#9399b2"/>
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#89dceb"/>
+      <stop offset="100%" stop-color="#74c7ec"/>
+    </linearGradient>
+    <linearGradient id="cubeTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#313244"/>
+      <stop offset="100%" stop-color="#181825"/>
+    </linearGradient>
+    <linearGradient id="cubeLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#181825"/>
+      <stop offset="100%" stop-color="#11111b"/>
+    </linearGradient>
+    <linearGradient id="cubeRight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#24273a"/>
+      <stop offset="100%" stop-color="#181825"/>
+    </linearGradient>
+    <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded Outer Container -->
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bgGrad)" stroke="#313244" stroke-width="2"/>
+  
+  <!-- Subtle Glow Effect -->
+  <circle cx="64" cy="64" r="42" fill="#cba6f7" opacity="0.12" filter="url(#purpleGlow)"/>
+
+  <!-- Isometric Box Structure (The Dev Box) -->
+  <g transform="translate(0, -2)">
+    <!-- Top Face -->
+    <path d="M64 24 L100 44 L64 64 L28 44 Z" fill="url(#cubeTop)" stroke="#45475a" stroke-width="2" stroke-linejoin="round"/>
+    
+    <!-- Left Face -->
+    <path d="M28 44 L64 64 L64 102 L28 82 Z" fill="url(#cubeLeft)" stroke="#313244" stroke-width="2" stroke-linejoin="round"/>
+    
+    <!-- Right Face -->
+    <path d="M64 64 L100 44 L100 82 L64 102 Z" fill="url(#cubeRight)" stroke="#313244" stroke-width="2" stroke-linejoin="round"/>
+
+    <!-- Windows 11 Modern Tiling Facets on Top Face -->
+    <path d="M50 36 L62 43 L62 55 L50 48 Z" fill="url(#cyanGrad)" opacity="0.85"/>
+    <path d="M66 45 L78 38 L78 50 L66 57 Z" fill="url(#purpleGrad)" opacity="0.85"/>
+
+    <!-- Terminal Prompt Glyph on Front Face (>_) -->
+    <path d="M38 66 L48 73 L38 80" stroke="#cba6f7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="50" y1="80" x2="58" y2="80" stroke="#89dceb" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Topological DAG Node Accents -->
+    <circle cx="64" cy="64" r="3.5" fill="#cba6f7"/>
+    <circle cx="100" cy="44" r="3" fill="#89dceb"/>
+    <circle cx="28" cy="44" r="3" fill="#89dceb"/>
+    <circle cx="64" cy="102" r="3" fill="#cba6f7"/>
+  </g>
+</svg>

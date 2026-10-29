@@ -1,0 +1,48 @@
+# devbox-win
+
+> Native Windows 11 Developer Machine Provisioner & Workstation Automation Engine
+
+devbox-win is a zero-dependency, declarative developer workstation bootstrap system for Windows 11 (Build 22000+). Modeled after Linux dotfile managers (Chezmoi, Ansible, Nix Home-Manager), it provisions packages via winget, registers developer fonts, configures shell and editor settings via unprivileged NTFS symbolic links, and installs an author-curated tiling desktop environment (GlazeWM DWM cloaking, Nord Zebar widget bar, Zed editor, VS Code, and AutoHotkey v2 shortcuts).
+
+## Quick Start (One-Liner)
+
+```powershell
+irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex
+```
+
+Execution steps:
+1. Verifies Windows 11 Build >= 22000 and 64-bit architecture.
+2. Elevate-Once Guard: Prompts once for UAC to enable Windows Developer Mode (`HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock\AllowDevelopmentWithoutDevLicense = 1`), guaranteeing unprivileged symbolic links for life without ongoing administrator rights.
+3. PowerShell 7+ Verification: Auto-installs `pwsh` via winget if missing.
+4. Engine Fetch: Clones repository to `~/.devbox-win/engine`.
+5. ANSI Keyboard-Driven Wizard: Launches interactive setup (`↑`/`↓` Arrow keys, `Spacebar` to toggle, `Enter` to confirm).
+6. DAG Provisioning: Evaluates 12 topological modules via Kahn's algorithm in ~90 seconds.
+
+## Core Architectural Invariants
+
+- **Kahn's Topological DAG**: Modules are ordered mathematically by dependency graph. Order: `packages -> fonts -> envvars -> git -> shell -> editor -> runtimes -> databases -> keybindings -> glazewm -> zebar -> dotfiles`.
+- **Unprivileged Symlinks**: Uses `SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE` enabled by Developer Mode. Symlinks never degrade to copies.
+- **Circuit-Breaker Runner**: 180-second process timeout guard wraps winget installer executions to prevent unattended deadlocks.
+- **Scoped Collision Backups**: Replaces identical target filenames (e.g. `settings.json`) safely using parent directory namespaces and unique collision hashes.
+- **Mutation Manifest**: Records every symlink creation and package installation in `~/.devbox-win/manifest.json` for 100% reversible rollback (`-Uninstall`).
+- **Disaster Recovery**: Single-command compressed snapshots with `.sha256` integrity checksums (`-Backup` / `-Restore`).
+- **Multi-Machine Git Sync**: Two-way synchronization of user configurations across multiple Windows machines (`-Sync`).
+- **Machine Health Doctor**: 17 automated system diagnostics (`-Doctor`).
+- **Visual Dashboard**: Zero-dependency Edge application-mode HTML companion (`-Dashboard`).
+
+## Available Presets
+
+1. `belal-catppuccin` (Signature Default): GlazeWM (DWM cloaking + `#cba6f7` lavender border), Zebar (Nord widget pack), Zed editor (primary), VS Code, Starship, JetBrainsMono Nerd Font, fnm/Node.js, pyenv-win/Python, rustup/Rust, .NET SDKs 8 & 9, PostgreSQL, Docker Desktop, PowerToys, AutoHotkey.
+2. `fullstack`: TypeScript, Node.js, Python, PostgreSQL, Docker, VS Code, Git CLI.
+3. `frontend`: Node.js, Google Chrome, VS Code, Tailwind CSS tooling, Starship prompt.
+4. `backend`: .NET 9.0 SDK, Python, PostgreSQL, Docker Desktop, Redis client.
+5. `devops`: Docker, Kubernetes (kubectl), Terraform, Helm, Azure CLI, Go.
+6. `minimal`: Windows Terminal, Starship, JetBrainsMono Nerd Font, Git, VS Code.
+
+## Documentation & Links
+
+- Repository: https://github.com/belal-waheed/devbox-win
+- Studio & Web Configurator: https://belal-waheed.github.io/devbox-win/
+- Full Technical Specification: https://raw.githubusercontent.com/belal-waheed/devbox-win/main/llms-full.txt
+- Author: Belal Waheed
+- License: MIT License
