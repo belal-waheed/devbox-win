@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="devbox-win: Native Windows 11 Developer Machine Provisioner. Zero-dependency, declarative YAML, Kahn's DAG topological engine, unprivileged symlinks, and curated tiling desktop with GlazeWM, Zebar, and Zed.">
+  <title>devbox-win | Native Windows 11 Developer Machine Provisioner & Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark light;
+      --bg-base: #0a0d12;
+      --bg-surface: #12161f;
+      --bg-surface-elevated: #1a202c;
+      --bg-surface-hover: #242c3d;
+      --border-subtle: #2d3748;
+      --border-accent: #cba6f7;
+      --text-primary: #f0f6fc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-purple: #cba6f7;
+      --accent-purple-glow: rgba(203, 166, 247, 0.25);
+      --accent-blue: #58a6ff;
+      --accent-cyan: #79c0ff;
+      --accent-green: #3fb950;
+      --accent-yellow: #d29922;
+      --accent-red: #f85149;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+      --shadow-purple: 0 0 30px rgba(203, 166, 247, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      text-wrap: balance;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--text-primary);
+    }
+
+    p, li {
+      text-wrap: pretty;
+      color: var(--text-secondary);
+    }
+
+    a {
+      color: var(--accent-purple);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    a:hover {
+      color: #e0ccfc;
+      text-decoration: underline;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+      background: var(--bg-surface-elevated);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Interactive Background Grid & Cursor Glow */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .cursor-glow {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-purple-glow) 0%, transparent 70%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s ease;
+      z-index: 1;
+      opacity: 0.6;
+    }
+
+    /* Layout Wrapper */
+    .app-container {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Navigation Bar */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: rgba(10, 13, 18, 0.82);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 24px;
+    }
+
+    .nav-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(203, 166, 247, 0.2), rgba(88, 166, 255, 0.2));
+      border: 1px solid var(--border-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-logo svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--accent-purple);
+    }
+
+    .nav-center-views {
+      display: flex;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .view-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .view-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .view-btn.active {
+      background: var(--accent-purple);
+      color: #0a0d12;
+      box-shadow: 0 0 12px rgba(203, 166, 247, 0.4);
+    }
+
+    .view-btn.active svg {
+      stroke: #0a0d12;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .search-trigger {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-mono);
+    }
+
+    .search-trigger:hover {
+      border-color: var(--accent-purple);
+      color: var(--text-primary);
+    }
+
+    .kbd-shortcut {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary {
+      background: var(--accent-purple);
+      color: #0a0d12;
+      border-color: var(--accent-purple);
+    }
+
+    .btn-primary:hover {
+      background: #b88cf5;
+      color: #000;
+      transform: translateY(-1px);
+      box-shadow: 0 0 16px rgba(203, 166, 247, 0.4);
+      text-decoration: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      border-color: var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-surface-hover);
+      border-color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    /* Views Container */
+    .view-content-wrapper {
+      flex: 1;
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    .view-panel {
+      display: none;
+      animation: fadeInView 0.25s ease-out;
+    }
+
+    .view-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeInView {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       VIEW 1: OVERVIEW / HERO
+       ========================================================================== */
+    .hero-section {
+      text-align: center;
+      padding: 48px 0 64px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .eyebrow-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(203, 166, 247, 0.1);
+      border: 1px solid rgba(203, 166, 247, 0.3);
+      color: var(--accent-purple);
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-headline {
+      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+      line-height: 1.08;
+      font-weight: 800;
+      margin-bottom: 24px;
+    }
+
+    .hero-headline span.gradient-text {
+      background: linear-gradient(135deg, #f0f6fc 30%, var(--accent-purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subhead {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      max-width: 780px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+
+    /* One-Liner Terminal Bar */
+    .hero-command-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      max-width: 760px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: var(--shadow-md), var(--shadow-purple);
+    }
+
+    .hero-command-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .prompt-symbol {
+      color: var(--accent-purple);
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .hero-badges-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 48px;
+    }
+
+    .hero-badge-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hero-badge-item svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--accent-green);
+    }
+
+    /* Cards Grid */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+      margin-bottom: 64px;
+    }
+
+    .overview-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .overview-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-purple);
+    }
+
+    .overview-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: rgba(203, 166, 247, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .overview-card-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--accent-purple);
+    }
+
+    .overview-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 10px;
+    }
+
+    .overview-card p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* ==========================================================================
+       VIEW 2: INTERACTIVE WEB CONFIGURATOR STUDIO
+       ========================================================================== */
+    .configurator-layout {
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .configurator-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .config-left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .config-step-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 24px;
+    }
+
+    .config-step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .config-step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(203, 166, 247, 0.15);
+      color: var(--accent-purple);
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .config-step-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .preset-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .preset-pill {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    .preset-pill:hover {
+      border-color: var(--text-muted);
+    }
+
+    .preset-pill.selected {
+      border-color: var(--accent-purple);
+      background: rgba(203, 166, 247, 0.1);
+    }
+
+    .preset-pill-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .preset-pill.selected .preset-pill-title {
+      color: var(--accent-purple);
+    }
+
+    .preset-pill-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .options-checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .option-item:hover {
+      border-color: var(--text-muted);
+    }
+
+    .option-item.checked {
+      border-color: var(--accent-purple);
+      background: rgba(203, 166, 247, 0.08);
+    }
+
+    .option-checkbox {
+      margin-top: 3px;
+      accent-color: var(--accent-purple);
+      cursor: pointer;
+    }
+
+    .option-info {
+      flex: 1;
+    }
+
+    .option-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .option-item.checked .option-label {
+      color: var(--accent-purple);
+    }
+
+    .option-subtext {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    /* Right Preview Sidebar */
+    .config-preview-panel {
+      position: sticky;
+      top: 80px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .preview-header {
+      background: var(--bg-surface-elevated);
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-code-box {
+      background: #0d1117;
+      padding: 16px;
+      max-height: 480px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
+      white-space: pre;
+      line-height: 1.5;
+    }
+
+    .preview-actions {
+      padding: 16px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .custom-command-box {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    /* ==========================================================================
+       VIEW 3: LIVE TILING DESKTOP PLAYGROUND
+       ========================================================================== */
+    .desktop-simulator-frame {
+      background: #1e1e2e;
+      border: 2px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg), var(--shadow-purple);
+      aspect-ratio: 16 / 9.5;
+      min-height: 580px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Nord Zebar Mock Bar */
+    .sim-zebar {
+      background: #2e3440;
+      color: #eceff4;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      user-select: none;
+    }
+
+    .zebar-workspaces {
+      display: flex;
+      gap: 6px;
+    }
+
+    .ws-tag {
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #3b4252;
+      color: #d8dee9;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.1s ease;
+    }
+
+    .ws-tag.active {
+      background: var(--accent-purple);
+      color: #111;
+      font-weight: 700;
+    }
+
+    .zebar-center-title {
+      color: #88c0d0;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .zebar-widgets {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.78rem;
+    }
+
+    .widget-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #e5e9f0;
+    }
+
+    .widget-item span.accent {
+      color: #a3be8c;
+    }
+
+    /* Tiling Windows Grid */
+    .sim-tiling-workspace {
+      flex: 1;
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+      background: #11111b;
+      position: relative;
+    }
+
+    .sim-tiling-workspace.layout-horizontal {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .sim-tiling-workspace.layout-split3 {
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+
+    .sim-window {
+      background: #181825;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .sim-window.active-window {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 16px rgba(203, 166, 247, 0.35);
+    }
+
+    .sim-win-titlebar {
+      background: #1e1e2e;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-family: var(--font-sans);
+      color: var(--text-secondary);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .sim-win-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sim-win-body {
+      flex: 1;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .sim-controls-bar {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 20px;
+    }
+
+    .sim-ctrl-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+
+    /* ==========================================================================
+       VIEW 4: DOCUMENTATION & ARCHITECTURE PORTAL
+       ========================================================================== */
+    .docs-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 32px;
+    }
+
+    @media (max-width: 860px) {
+      .docs-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .docs-sidebar {
+      position: sticky;
+      top: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .docs-nav-link {
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .docs-nav-link:hover {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .docs-nav-link.active {
+      background: rgba(203, 166, 247, 0.12);
+      color: var(--accent-purple);
+      border-left: 2px solid var(--accent-purple);
+    }
+
+    .docs-content {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 36px;
+    }
+
+    .docs-section {
+      display: none;
+    }
+
+    .docs-section.active {
+      display: block;
+      animation: fadeInView 0.2s ease-in-out;
+    }
+
+    .docs-section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .docs-section h3 {
+      font-size: 1.3rem;
+      margin: 24px 0 12px;
+    }
+
+    .docs-section p {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      line-height: 1.7;
+    }
+
+    /* Modal / Command Palette (<dialog>) */
+    dialog#command-palette {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      width: min(90vw, 640px);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 32px rgba(203, 166, 247, 0.3);
+      color: var(--text-primary);
+      margin: 12vh auto auto;
+      overscroll-behavior: contain;
+    }
+
+    dialog#command-palette::backdrop {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      overscroll-behavior: contain;
+    }
+
+    .palette-search-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .palette-search-box svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--accent-purple);
+    }
+
+    .palette-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1.1rem;
+      font-family: var(--font-sans);
+      outline: none;
+    }
+
+    .palette-list {
+      max-height: 360px;
+      overflow-y: auto;
+      padding: 12px;
+      list-style: none;
+    }
+
+    .palette-item {
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.1s ease;
+      font-size: 0.95rem;
+    }
+
+    .palette-item:hover, .palette-item.active {
+      background: rgba(203, 166, 247, 0.15);
+      color: var(--accent-purple);
+    }
+
+    .palette-footer {
+      padding: 10px 18px;
+      background: var(--bg-surface-elevated);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      background: rgba(10, 13, 18, 0.95);
+      padding: 40px 24px;
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dynamic Cursor Light Glow -->
+  <div class="cursor-glow" id="cursor-glow"></div>
+  <div class="bg-grid"></div>
+
+  <div class="app-container">
+    <!-- Top Navigation -->
+    <header class="navbar">
+      <div class="nav-inner">
+        <a href="#" class="brand" onclick="switchView('overview'); return false;">
+          <div class="brand-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
+            </svg>
+          </div>
+          <span>devbox-win</span>
+        </a>
+
+        <!-- View Switcher -->
+        <nav class="nav-center-views" aria-label="Main Navigation">
+          <button class="view-btn active" data-view="overview" onclick="switchView('overview')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
+            Overview
+          </button>
+          <button class="view-btn" data-view="configurator" onclick="switchView('configurator')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            Web Configurator
+          </button>
+          <button class="view-btn" data-view="playground" onclick="switchView('playground')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            Tiling Rice Lab
+          </button>
+          <button class="view-btn" data-view="docs" onclick="switchView('docs')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            Docs &amp; Architecture
+          </button>
+        </nav>
+
+        <!-- Search & GitHub Action -->
+        <div class="nav-actions">
+          <button class="search-trigger" onclick="openPalette()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>Search</span>
+            <span class="kbd-shortcut">Ctrl+K</span>
+          </button>
+          <a href="https://github.com/belal-waheed/devbox-win" class="btn btn-secondary" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+            </svg>
+            <span>Star</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Views Container -->
+    <main class="view-content-wrapper">
+
+      <!-- ======================================================================
+           VIEW 1: OVERVIEW & DISCOVERY
+           ====================================================================== -->
+      <section class="view-panel active" id="panel-overview">
+        <div class="hero-section">
+          <div class="eyebrow-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Windows 11 Native Developer Machine Provisioner
+          </div>
+          <h1 class="hero-headline">
+            Automate Your Whole Windows Machine.<br>
+            <span class="gradient-text">In One Single Command.</span>
+          </h1>
+          <p class="hero-subhead">
+            No fragile registry hacks. No manual downloads. Zero runtime dependencies. Declarative YAML, Kahn's DAG topological engine, unprivileged native symlinks, and a signature tiling desktop with GlazeWM, Zebar, and Zed editor.
+          </p>
+
+          <!-- Interactive One-Liner Box -->
+          <div class="hero-command-card">
+            <div class="hero-command-text">
+              <span class="prompt-symbol">PS &gt;</span>
+              <span id="main-bootstrap-cmd">irm https://raw.githubusercontent.com/belal-waheed/devbox-win/master/bootstrap.ps1 | iex</span>
+            </div>
+            <button class="btn btn-primary" onclick="copyCmd('main-bootstrap-cmd', this)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy One-Liner</span>
+            </button>
+          </div>
+
+          <div class="hero-badges-row">
+            <div class="hero-badge-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Win 11 Build 22000+</span>
+            </div>
+            <div class="hero-badge-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>PowerShell 7+ Native</span>
+            </div>
+            <div class="hero-badge-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>148 Unit Tests (100% Pass)</span>
+            </div>
+            <div class="hero-badge-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Zero Host Changes on Dry-Run</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: center; gap: 16px;">
+            <button class="btn btn-primary" onclick="switchView('configurator')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+              Launch Web Configurator
+            </button>
+            <button class="btn btn-secondary" onclick="switchView('playground')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+              Explore Tiling Rice Lab
+            </button>
+          </div>
+        </div>
+
+        <!-- 6 Architectural Pillars Grid -->
+        <div class="overview-grid">
+          <div class="overview-card">
+            <div class="overview-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+            </div>
+            <h3>Kahn's Topological DAG Engine</h3>
+            <p>12 provisioner modules mathematically sorted by dependency graph. Prevents race conditions, detects cyclic loops, and guarantees runtimes precede editor configurations.</p>
+          </div>
+
+          <div class="overview-card">
+            <div class="overview-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h3>Unprivileged Native Symlinks</h3>
+            <p>Elevate-once bootstrap check enables Windows Developer Mode in the registry. Your dotfiles stay live via NTFS symbolic links without requiring constant admin privileges.</p>
+          </div>
+
+          <div class="overview-card">
+            <div class="overview-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            </div>
+            <h3>Curated Tiling Desktop (Rice)</h3>
+            <p>Signature out-of-the-box GlazeWM setup featuring DWM hardware cloaking to eliminate window flicker, Catppuccin lavender border, Nord Zebar widget bar, and Zed editor.</p>
+          </div>
+
+          <div class="overview-card">
+            <div class="overview-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            </div>
+            <h3>Circuit-Breaker Process Runner</h3>
+            <p>180-second timeout guard on WinGet installer processes. If a package triggers a background modal or locks up, the runner kills it cleanly without hanging the bootstrap run.</p>
+          </div>
+
+          <div class="overview-card">
+            <div class="overview-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            </div>
+            <h3>Collision-Proof State &amp; Rollback</h3>
+            <p>Scoped parent prefixing and collision hashes ensure files like <code>settings.json</code> never overwrite each other in backups. Full reversal available via <code>-Uninstall</code>.</p>
+          </div>
+
+          <div class="overview-card">
+            <div class="overview-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h3>Disaster Recovery &amp; Health Doctor</h3>
+            <p>17 machine health diagnostics (`-Doctor`), SHA256 verified backup archives (`-Backup`/`-Restore`), 2-way cross-machine Git sync (`-Sync`), and an Edge Companion App.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================================
+           VIEW 2: WEB CONFIGURATOR STUDIO
+           ====================================================================== -->
+      <section class="view-panel" id="panel-configurator">
+        <div style="margin-bottom: 24px;">
+          <h2>Online Workstation Configurator</h2>
+          <p>Design your tailor-made Windows 11 machine configuration online. As you toggle packages and options, your <code>config.yaml</code> and customized one-liner update dynamically.</p>
+        </div>
+
+        <div class="configurator-layout">
+          <div class="config-left-panel">
+            <!-- Step 1: Presets -->
+            <div class="config-step-card">
+              <div class="config-step-header">
+                <div class="config-step-number">1</div>
+                <div class="config-step-title">Choose a Baseline Preset</div>
+              </div>
+              <div class="preset-selector-grid">
+                <div class="preset-pill selected" onclick="selectPreset('belal-catppuccin', this)">
+                  <div class="preset-pill-title">Belal Signature</div>
+                  <div class="preset-pill-desc">GlazeWM cloak, Nord Zebar, Zed editor, VS Code, full dev stack.</div>
+                </div>
+                <div class="preset-pill" onclick="selectPreset('fullstack', this)">
+                  <div class="preset-pill-title">Fullstack</div>
+                  <div class="preset-pill-desc">Node.js, Python, PostgreSQL, Docker, VS Code, Git CLI.</div>
+                </div>
+                <div class="preset-pill" onclick="selectPreset('frontend', this)">
+                  <div class="preset-pill-title">Frontend</div>
+                  <div class="preset-pill-desc">TypeScript, Node, Chrome, VS Code, Tailwind, Starship.</div>
+                </div>
+                <div class="preset-pill" onclick="selectPreset('backend', this)">
+                  <div class="preset-pill-title">Backend</div>
+                  <div class="preset-pill-desc">.NET 9 SDK, Python, PostgreSQL, Docker, Redis client.</div>
+                </div>
+                <div class="preset-pill" onclick="selectPreset('devops', this)">
+                  <div class="preset-pill-title">DevOps</div>
+                  <div class="preset-pill-desc">Docker, Kubernetes, Terraform, Helm, Azure CLI, Go.</div>
+                </div>
+                <div class="preset-pill" onclick="selectPreset('minimal', this)">
+                  <div class="preset-pill-title">Minimal</div>
+                  <div class="preset-pill-desc">Terminal, Starship, JetBrainsMono NF, Git, VS Code.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Editors -->
+            <div class="config-step-card">
+              <div class="config-step-header">
+                <div class="config-step-number">2</div>
+                <div class="config-step-title">Code Editors &amp; IDEs</div>
+              </div>
+              <div class="options-checkbox-grid">
+                <div class="option-item checked" onclick="toggleConfigItem('editor_zed', this)">
+                  <input type="checkbox" class="option-checkbox" id="editor_zed" checked>
+                  <div class="option-info">
+                    <div class="option-label">Zed Editor</div>
+                    <div class="option-subtext">GPU-accelerated, Catppuccin Mocha, dual symlinks</div>
+                  </div>
+                </div>
+                <div class="option-item checked" onclick="toggleConfigItem('editor_vscode', this)">
+                  <input type="checkbox" class="option-checkbox" id="editor_vscode" checked>
+                  <div class="option-info">
+                    <div class="option-label">VS Code</div>
+                    <div class="option-subtext">Includes 8 curated extensions and settings sync</div>
+                  </div>
+                </div>
+                <div class="option-item" onclick="toggleConfigItem('editor_neovim', this)">
+                  <input type="checkbox" class="option-checkbox" id="editor_neovim">
+                  <div class="option-info">
+                    <div class="option-label">Neovim</div>
+                    <div class="option-subtext">Modern modal terminal editor</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Tiling Desktop -->
+            <div class="config-step-card">
+              <div class="config-step-header">
+                <div class="config-step-number">3</div>
+                <div class="config-step-title">Desktop Environment &amp; Tiling WM</div>
+              </div>
+              <div class="options-checkbox-grid">
+                <div class="option-item checked" onclick="toggleConfigItem('tiling_glazewm', this)">
+                  <input type="checkbox" class="option-checkbox" id="tiling_glazewm" checked>
+                  <div class="option-info">
+                    <div class="option-label">GlazeWM (DWM Cloak)</div>
+                    <div class="option-subtext">Hardware cloaking avoids flicker, lavender border</div>
+                  </div>
+                </div>
+                <div class="option-item checked" onclick="toggleConfigItem('tiling_zebar', this)">
+                  <input type="checkbox" class="option-checkbox" id="tiling_zebar" checked>
+                  <div class="option-info">
+                    <div class="option-label">Zebar Status Bar (Nord Pack)</div>
+                    <div class="option-subtext">Workspaces, CPU, RAM, media player, clock</div>
+                  </div>
+                </div>
+                <div class="option-item checked" onclick="toggleConfigItem('tools_ahk', this)">
+                  <input type="checkbox" class="option-checkbox" id="tools_ahk" checked>
+                  <div class="option-info">
+                    <div class="option-label">AutoHotkey v2 Shortcuts</div>
+                    <div class="option-subtext">Window management hotkeys in Windows startup</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Languages & Runtimes -->
+            <div class="config-step-card">
+              <div class="config-step-header">
+                <div class="config-step-number">4</div>
+                <div class="config-step-title">Languages, Runtimes &amp; Tools</div>
+              </div>
+              <div class="options-checkbox-grid">
+                <div class="option-item checked" onclick="toggleConfigItem('runtime_node', this)">
+                  <input type="checkbox" class="option-checkbox" id="runtime_node" checked>
+                  <div class="option-info">
+                    <div class="option-label">Node.js (fnm)</div>
+                    <div class="option-subtext">Fast node version manager</div>
+                  </div>
+                </div>
+                <div class="option-item checked" onclick="toggleConfigItem('runtime_python', this)">
+                  <input type="checkbox" class="option-checkbox" id="runtime_python" checked>
+                  <div class="option-info">
+                    <div class="option-label">Python (pyenv-win)</div>
+                    <div class="option-subtext">Version management for Python</div>
+                  </div>
+                </div>
+                <div class="option-item checked" onclick="toggleConfigItem('runtime_rust', this)">
+                  <input type="checkbox" class="option-checkbox" id="runtime_rust" checked>
+                  <div class="option-info">
+                    <div class="option-label">Rust (rustup / cargo)</div>
+                    <div class="option-subtext">Official Rust toolchain</div>
+                  </div>
+                </div>
+                <div class="option-item checked" onclick="toggleConfigItem('runtime_dotnet', this)">
+                  <input type="checkbox" class="option-checkbox" id="runtime_dotnet" checked>
+                  <div class="option-info">
+                    <div class="option-label">.NET 9.0 SDK</div>
+                    <div class="option-subtext">C# &amp; modern .NET runtime</div>
+                  </div>
+                </div>
+                <div class="option-item checked" onclick="toggleConfigItem('db_postgres', this)">
+                  <input type="checkbox" class="option-checkbox" id="db_postgres" checked>
+                  <div class="option-info">
+                    <div class="option-label">PostgreSQL Client</div>
+                    <div class="option-subtext">psql &amp; CLI utilities</div>
+                  </div>
+                </div>
+                <div class="option-item checked" onclick="toggleConfigItem('db_docker', this)">
+                  <input type="checkbox" class="option-checkbox" id="db_docker" checked>
+                  <div class="option-info">
+                    <div class="option-label">Docker Desktop</div>
+                    <div class="option-subtext">Container engine &amp; compose</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview & Action Sidebar -->
+          <div class="config-preview-panel">
+            <div class="preview-header">
+              <div class="preview-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                Generated config.yaml
+              </div>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="downloadConfig()">
+                Download
+              </button>
+            </div>
+            <pre class="preview-code-box" id="yaml-preview"></pre>
+            <div class="preview-actions">
+              <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">
+                Your Customized Bootstrap Command:
+              </div>
+              <div class="custom-command-box">
+                <span id="custom-bootstrap-cmd">irm .../bootstrap.ps1 | iex -Preset belal-catppuccin</span>
+                <button class="btn btn-primary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="copyCmd('custom-bootstrap-cmd', this)">
+                  Copy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================================
+           VIEW 3: LIVE TILING DESKTOP PLAYGROUND
+           ====================================================================== -->
+      <section class="view-panel" id="panel-playground">
+        <div style="margin-bottom: 24px;">
+          <h2>Tiling Rice Desktop Lab</h2>
+          <p>Experience the signature GlazeWM tiling window manager and Nord Zebar widget bar live in your browser before provisioning.</p>
+        </div>
+
+        <div class="desktop-simulator-frame" id="sim-frame">
+          <!-- Zebar Nord Status Bar -->
+          <div class="sim-zebar">
+            <div class="zebar-workspaces">
+              <span class="ws-tag active" onclick="switchSimWorkspace(1, this)">1: code</span>
+              <span class="ws-tag" onclick="switchSimWorkspace(2, this)">2: term</span>
+              <span class="ws-tag" onclick="switchSimWorkspace(3, this)">3: web</span>
+              <span class="ws-tag" onclick="switchSimWorkspace(4, this)">4: db</span>
+            </div>
+            <div class="zebar-center-title" id="sim-window-status">
+              GlazeWM: DWM Hardware Cloaking Active (Zero Desktop Flicker)
+            </div>
+            <div class="zebar-widgets">
+              <div class="widget-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span id="sim-clock">14:46</span>
+              </div>
+              <div class="widget-item">
+                <span>CPU:</span>
+                <span class="accent">12%</span>
+              </div>
+              <div class="widget-item">
+                <span>RAM:</span>
+                <span class="accent">6.4GB</span>
+              </div>
+              <div class="widget-item" style="color: var(--accent-purple);">
+                <span>Border: #cba6f7</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tiling Windows Workspace -->
+          <div class="sim-tiling-workspace layout-horizontal" id="sim-workspace">
+            <!-- Window 1: Zed Editor -->
+            <div class="sim-window active-window" id="win-zed" onclick="focusSimWin('win-zed')">
+              <div class="sim-win-titlebar">
+                <div class="sim-win-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                  <span>Zed Editor - main.rs (Catppuccin Mocha)</span>
+                </div>
+                <span style="font-size: 0.75rem; color: var(--accent-purple);">[Focused]</span>
+              </div>
+              <div class="sim-win-body">
+                <span style="color: #6c7086;">// devbox-win: Native Windows 11 DAG Engine</span><br>
+                <span style="color: #cba6f7;">use</span> devbox_core::{DagEngine, SymlinkManager};<br><br>
+                <span style="color: #89b4fa;">fn</span> <span style="color: #a6e3a1;">bootstrap_workstation</span>() -&gt; <span style="color: #f9e2af;">Result</span>&lt;(), EngineError&gt; {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #cdd6f4;">let mut dag = DagEngine::from_yaml(</span><span style="color: #a6e3a1;">"config.yaml"</span><span style="color: #cdd6f4;">)?;</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #cdd6f4;">dag.resolve_topological_order()?;</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #6c7086;">// 148 automated unit tests verified</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #cdd6f4;">dag.execute_idempotent()</span><br>
+                }
+              </div>
+            </div>
+
+            <!-- Window 2: PowerShell 7 Terminal -->
+            <div class="sim-window" id="win-term" onclick="focusSimWin('win-term')">
+              <div class="sim-win-titlebar">
+                <div class="sim-win-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                  <span>PowerShell 7.5.0 - Starship Prompt</span>
+                </div>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">[Alt+H]</span>
+              </div>
+              <div class="sim-win-body">
+                <span style="color: #89b4fa;">devbox-win</span> on <span style="color: #a6e3a1;">git:master</span> [4f466e5]<br>
+                <span style="color: #cba6f7;">PS &gt;</span> devbox-win -Doctor<br>
+                <span style="color: #a6e3a1;">[PASS]</span> Windows 11 Build: 26100 (Gecko)<br>
+                <span style="color: #a6e3a1;">[PASS]</span> Windows Developer Mode: Enabled (Native Symlinks)<br>
+                <span style="color: #a6e3a1;">[PASS]</span> Winget Package Manager: Ready<br>
+                <span style="color: #a6e3a1;">[PASS]</span> Test Suite: 148 passed, 0 failed<br>
+                <span style="color: #cba6f7;">PS &gt;</span> <span class="blink">_</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls Bar -->
+          <div class="sim-controls-bar">
+            <div class="sim-ctrl-group">
+              <span style="font-weight: 600; color: var(--text-primary);">Layout Split:</span>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="setSimLayout('layout-horizontal')">Horizontal Split</button>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="setSimLayout('layout-split3')">Asymmetric Split</button>
+            </div>
+            <div class="sim-ctrl-group">
+              <span style="font-weight: 600; color: var(--text-primary);">Border Accent:</span>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: #cba6f7;" onclick="setSimBorder('#cba6f7')">Catppuccin (#cba6f7)</button>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: #88c0d0;" onclick="setSimBorder('#88c0d0')">Nord (#88c0d0)</button>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: #50fa7b;" onclick="setSimBorder('#50fa7b')">Emerald (#50fa7b)</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================================
+           VIEW 4: DOCUMENTATION & ARCHITECTURE PORTAL
+           ====================================================================== -->
+      <section class="view-panel" id="panel-docs">
+        <div class="docs-layout">
+          <aside class="docs-sidebar">
+            <a class="docs-nav-link active" onclick="switchDocsSection('quickstart', this)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Quickstart Guide
+            </a>
+            <a class="docs-nav-link" onclick="switchDocsSection('cli', this)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+              CLI Commands Reference
+            </a>
+            <a class="docs-nav-link" onclick="switchDocsSection('architecture', this)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+              DAG &amp; Symlink Engine
+            </a>
+            <a class="docs-nav-link" onclick="switchDocsSection('marketplace', this)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+              Community Modules
+            </a>
+          </aside>
+
+          <article class="docs-content">
+            <!-- Quickstart -->
+            <div class="docs-section active" id="docs-quickstart">
+              <h2>Quickstart Guide</h2>
+              <p>Get up and running on any Windows 11 machine in under 90 seconds.</p>
+              <h3>Prerequisites</h3>
+              <ul style="margin-left: 24px; margin-bottom: 24px;">
+                <li>Windows 11 64-bit (Build 22000 or newer)</li>
+                <li>Internet connection for WinGet and GitHub package downloads</li>
+                <li>Standard user account (administrative elevation prompt appears once to enable Developer Mode for unprivileged symlinks)</li>
+              </ul>
+              <h3>One-Liner Execution</h3>
+              <p>Open Windows Terminal (PowerShell) and run:</p>
+              <pre class="preview-code-box">irm https://raw.githubusercontent.com/belal-waheed/devbox-win/master/bootstrap.ps1 | iex</pre>
+            </div>
+
+            <!-- CLI Reference -->
+            <div class="docs-section" id="docs-cli">
+              <h2>CLI Command Reference</h2>
+              <p>All operations are driven via <code>core/engine.ps1</code> or standalone switches:</p>
+              <h3>Diagnostics &amp; Monitoring</h3>
+              <pre class="preview-code-box"># Run 17 machine health checks
+pwsh -NoProfile -File core/doctor.ps1
+
+# Launch Edge companion web dashboard
+pwsh -NoProfile -File core/dashboard.ps1 -Open</pre>
+              <h3>Disaster Recovery</h3>
+              <pre class="preview-code-box"># Create compressed SHA256 snapshot
+pwsh -NoProfile -File core/backup.ps1
+
+# Restore workstation state from archive
+pwsh -NoProfile -File core/backup.ps1 -Restore "backup.zip"</pre>
+              <h3>Multi-Machine Synchronization</h3>
+              <pre class="preview-code-box"># Check status against upstream git remote
+pwsh -NoProfile -File core/sync.ps1 -Status
+
+# Push or pull local dotfile changes
+pwsh -NoProfile -File core/sync.ps1 -Push
+pwsh -NoProfile -File core/sync.ps1 -Pull</pre>
+            </div>
+
+            <!-- Architecture -->
+            <div class="docs-section" id="docs-architecture">
+              <h2>Kahn's Topological DAG &amp; Symlinks</h2>
+              <p><code>devbox-win</code> avoids race conditions and cyclic dependencies by calculating an in-degree topological order using Kahn's algorithm before any execution starts.</p>
+              <h3>The 12 Ordered Modules</h3>
+              <pre class="preview-code-box">packages &rarr; fonts &rarr; envvars &rarr; git &rarr; shell &rarr; editor &rarr; runtimes &rarr; databases &rarr; keybindings &rarr; glazewm &rarr; zebar &rarr; dotfiles</pre>
+              <h3>Unprivileged Symlink Engine</h3>
+              <p>NTFS symbolic links are created using the Windows 10/11 unprivileged symlink flag (<code>SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE</code>). If Developer Mode is disabled, <code>bootstrap.ps1</code> prompts once for elevation, sets the registry key, and drops down to user privileges for all subsequent operations.</p>
+            </div>
+
+            <!-- Marketplace -->
+            <div class="docs-section" id="docs-marketplace">
+              <h2>Community Modules</h2>
+              <p>Easily extend <code>devbox-win</code> with modular community plugins located in <code>modules/community/</code>.</p>
+              <pre class="preview-code-box"># Example: modules/community/gaming.ps1
+function Get-DevboxModuleMetadata {
+    [PSCustomObject]@{
+        Name        = "gaming"
+        Description = "Install Steam, Discord, and GPU tools"
+        DependsOn   = @("packages")
+    }
+}</pre>
+            </div>
+          </article>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Global Command Palette (<dialog>) -->
+    <dialog id="command-palette" closedby="any" aria-labelledby="palette-heading">
+      <div class="palette-search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" class="palette-input" id="palette-input" placeholder="Type a command, preset, or section..." autofocus aria-label="Command search">
+      </div>
+      <ul class="palette-list" id="palette-results">
+        <li class="palette-item active" onclick="selectPaletteView('configurator')">
+          <span><strong>Web Configurator</strong> - Customize your workstation online</span>
+          <span class="kbd-shortcut">Enter</span>
+        </li>
+        <li class="palette-item" onclick="selectPaletteView('playground')">
+          <span><strong>Tiling Rice Lab</strong> - Test GlazeWM and Zebar live</span>
+          <span class="kbd-shortcut">Jump</span>
+        </li>
+        <li class="palette-item" onclick="selectPaletteView('docs')">
+          <span><strong>Docs: CLI Reference</strong> - View all flags and switches</span>
+          <span class="kbd-shortcut">Docs</span>
+        </li>
+        <li class="palette-item" onclick="copyCmd('main-bootstrap-cmd', this)">
+          <span><strong>Copy One-Liner</strong> - Copy bootstrap script</span>
+          <span class="kbd-shortcut">Copy</span>
+        </li>
+      </ul>
+      <div class="palette-footer">
+        <span>Use &uarr; &darr; to navigate, Enter to select</span>
+        <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="closePalette()">Esc to close</button>
+      </div>
+    </dialog>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-inner">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="brand-logo" style="width: 24px; height: 24px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+          </div>
+          <span>devbox-win &bull; Open Source Native Windows 11 Provisioner &bull; MIT License</span>
+        </div>
+        <div>
+          Created with systems-grade architectural integrity &bull; Zero emojis in code &amp; logs.
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Interactive Client-side Script -->
+  <script>
+    // Mouse Glow Tracking
+    const glow = document.getElementById('cursor-glow');
+    window.addEventListener('pointermove', (e) => {
+      glow.style.left = `${e.clientX}px`;
+      glow.style.top = `${e.clientY}px`;
+    });
+
+    // View Switching
+    function switchView(viewName) {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+
+      const activeBtn = document.querySelector(`.view-btn[data-view="${viewName}"]`);
+      const activePanel = document.getElementById(`panel-${viewName}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      if (activePanel) activePanel.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Copy Utility
+    function copyCmd(id, btnElement) {
+      const text = document.getElementById(id)?.innerText || id;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = btnElement.innerHTML;
+        btnElement.classList.add('copied');
+        btnElement.innerText = 'Copied!';
+        setTimeout(() => {
+          btnElement.classList.remove('copied');
+          btnElement.innerHTML = originalText;
+        }, 2000);
+      });
+    }
+
+    // Configurator State
+    const configState = {
+      preset: 'belal-catppuccin',
+      editor_zed: true,
+      editor_vscode: true,
+      editor_neovim: false,
+      tiling_glazewm: true,
+      tiling_zebar: true,
+      tools_ahk: true,
+      runtime_node: true,
+      runtime_python: true,
+      runtime_rust: true,
+      runtime_dotnet: true,
+      db_postgres: true,
+      db_docker: true
+    };
+
+    function selectPreset(presetName, element) {
+      document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('selected'));
+      element.classList.add('selected');
+      configState.preset = presetName;
+
+      // Update toggles based on preset
+      if (presetName === 'minimal') {
+        configState.tiling_glazewm = false;
+        configState.tiling_zebar = false;
+        configState.editor_zed = false;
+        configState.db_postgres = false;
+        configState.db_docker = false;
+      } else {
+        configState.tiling_glazewm = true;
+        configState.tiling_zebar = true;
+        configState.editor_zed = true;
+      }
+      syncTogglesToUI();
+      renderYamlPreview();
+    }
+
+    function toggleConfigItem(key, element) {
+      const checkbox = element.querySelector('.option-checkbox');
+      if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        configState[key] = checkbox.checked;
+        if (checkbox.checked) {
+          element.classList.add('checked');
+        } else {
+          element.classList.remove('checked');
+        }
+        renderYamlPreview();
+      }
+    }
+
+    function syncTogglesToUI() {
+      for (const [key, val] of Object.entries(configState)) {
+        const checkbox = document.getElementById(key);
+        if (checkbox) {
+          checkbox.checked = val;
+          const parent = checkbox.closest('.option-item');
+          if (parent) {
+            if (val) parent.classList.add('checked');
+            else parent.classList.remove('checked');
+          }
+        }
+      }
+    }
+
+    function renderYamlPreview() {
+      const yaml = 
+`# Generated devbox-win Configuration
+version: 1.0.0
+preset: "${configState.preset}"
+
+user:
+  name: "Developer"
+  email: "dev@localhost"
+
+editor:
+  primary: "${configState.editor_zed ? 'zed' : 'code'}"
+  vscode: ${configState.editor_vscode}
+  zed: ${configState.editor_zed}
+  neovim: ${configState.editor_neovim}
+
+tiling:
+  enabled: ${configState.tiling_glazewm}
+  glazewm:
+    hide_method: "cloak"
+    border_color: "#cba6f7"
+  zebar:
+    pack: "nord"
+  autohotkey: ${configState.tools_ahk}
+
+runtimes:
+  node: ${configState.runtime_node}
+  python: ${configState.runtime_python}
+  rust: ${configState.runtime_rust}
+  dotnet: ${configState.runtime_dotnet}
+
+databases:
+  postgresql: ${configState.db_postgres}
+  docker: ${configState.db_docker}
+`;
+      document.getElementById('yaml-preview').textContent = yaml;
+      document.getElementById('custom-bootstrap-cmd').textContent = 
+        `irm https://raw.githubusercontent.com/belal-waheed/devbox-win/master/bootstrap.ps1 | iex -Preset ${configState.preset}`;
+    }
+
+    function downloadConfig() {
+      const text = document.getElementById('yaml-preview').textContent;
+      const blob = new Blob([text], { type: 'text/yaml' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'config.yaml';
+      a.click();
+    }
+
+    // Desktop Simulator Interactive Logic
+    function switchSimWorkspace(wsNum, element) {
+      document.querySelectorAll('.ws-tag').forEach(t => t.classList.remove('active'));
+      element.classList.add('active');
+      document.getElementById('sim-window-status').innerText = 
+        `GlazeWM: Workspace ${wsNum} Active | DWM Hardware Cloak Active`;
+    }
+
+    function focusSimWin(winId) {
+      document.querySelectorAll('.sim-window').forEach(w => w.classList.remove('active-window'));
+      document.getElementById(winId)?.classList.add('active-window');
+    }
+
+    function setSimLayout(layoutClass) {
+      const ws = document.getElementById('sim-workspace');
+      ws.className = `sim-tiling-workspace ${layoutClass}`;
+    }
+
+    function setSimBorder(hexColor) {
+      document.querySelectorAll('.sim-window.active-window').forEach(w => {
+        w.style.borderColor = hexColor;
+        w.style.boxShadow = `0 0 16px ${hexColor}66`;
+      });
+    }
+
+    // Docs Sidebar Switcher
+    function switchDocsSection(sectionId, element) {
+      document.querySelectorAll('.docs-nav-link').forEach(l => l.classList.remove('active'));
+      document.querySelectorAll('.docs-section').forEach(s => s.classList.remove('active'));
+      element.classList.add('active');
+      document.getElementById(`docs-${sectionId}`)?.classList.add('active');
+    }
+
+    // Native <dialog> Command Palette
+    const palette = document.getElementById('command-palette');
+    function openPalette() {
+      palette.showModal();
+      document.getElementById('palette-input')?.focus();
+    }
+
+    function closePalette() {
+      palette.close();
+    }
+
+    function selectPaletteView(viewName) {
+      closePalette();
+      switchView(viewName);
+    }
+
+    // Keyboard Shortcut (Ctrl+K or Cmd+K)
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (palette.open) closePalette();
+        else openPalette();
+      }
+    });
+
+    // Close on click outside (progressive enhancement fallback)
+    palette.addEventListener('click', (e) => {
+      const rect = palette.getBoundingClientRect();
+      if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+        closePalette();
+      }
+    });
+
+    // Initial Render
+    renderYamlPreview();
+  </script>
+</body>
+</html>
