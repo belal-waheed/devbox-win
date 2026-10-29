@@ -595,7 +595,7 @@ All pull requests must satisfy our mandatory quality gates:
 
 ## How to Fork & Customize
 
-1. **Fork the repository** on GitHub: `https://github.com/bel/devbox-win` -> `https://github.com/<your-username>/devbox-win`.
+1. **Fork the repository** on GitHub: `https://github.com/belal-waheed/devbox-win` -> `https://github.com/<your-username>/devbox-win`.
 2. **Run the Wizard**: Run `pwsh -NoProfile -File core/wizard.ps1` to configure your name, email, and preset.
 3. **Customize your dotfiles**:
    - Add your preferred VS Code extensions to `dotfiles/vscode/extensions.txt`.

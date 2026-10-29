@@ -9,7 +9,7 @@
 
 [CmdletBinding()]
 param(
-    [string]$RepoUrl = "https://github.com/bel/devbox-win.git",
+    [string]$RepoUrl = "https://github.com/belal-waheed/devbox-win.git",
     [string]$Branch = "main",
     [string]$TargetDir = "",
     [string]$ConfigFile = "",
