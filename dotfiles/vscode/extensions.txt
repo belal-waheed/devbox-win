@@ -1,0 +1,10 @@
+# devbox-win curated VS Code extensions
+# Format: <publisher>.<extension-name>
+eamodio.gitlens
+esbenp.prettier-vscode
+dbaeumer.vscode-eslint
+ms-vscode.powershell
+redhat.vscode-yaml
+tamasfe.even-better-toml
+EditorConfig.EditorConfig
+usernamehw.errorlens

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#232634" />
+    <title>Zebar</title>
+    <script type="module" crossorigin src="./assets/glazewm-BvLYD07q.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/glazewm-DFc192AO.css">
+    <style>
+      /* --- Root Frame & Catppuccin Frappé Aesthetic --- */
+      body {
+        font-family: 'JetBrains Mono NF', 'Cascadia Code', 'Segoe UI Variable Display', monospace !important;
+        background: transparent !important;
+        user-select: none !important;
+      }
+
+      .obsidian-island {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+      }
+
+      #root > div {
+        background: rgba(35, 38, 52, 0.90) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(198, 208, 245, 0.12) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+        margin-left: 6px !important;
+        margin-right: 6px !important;
+        width: calc(100% - 12px) !important;
+        height: 32px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 10px !important;
+      }
+
+      /* --- Icon Overhaul: Eliminate generic SVGs --- */
+      svg.lucide, .lucide-icon, svg.lucide-app-window, svg.lucide-cpu, svg.lucide-memory-stick, svg.lucide-clock {
+        display: none !important;
+      }
+
+      /* --- Workspaces --- */
+      button[title*="Workspace"] {
+        height: 22px !important;
+        min-width: 24px !important;
+        padding: 0 7px !important;
+        border-radius: 5px !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+        cursor: pointer !important;
+      }
+
+      /* Inactive workspace */
+      button[title*="Workspace"]:not(.bg-\[\#8b5cf6\]):not([class*="bg-[#8b5cf6]"]) {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        color: #838ba7 !important;
+        box-shadow: none !important;
+      }
+      button[title*="Workspace"]:not(.bg-\[\#8b5cf6\]):not([class*="bg-[#8b5cf6]"]):hover {
+        background: rgba(255, 255, 255, 0.09) !important;
+        color: #c6d0f5 !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+      }
+
+      /* Active/Focused workspace */
+      button[title*="Workspace"].bg-\[\#8b5cf6\],
+      button[title*="Workspace"][class*="bg-[#8b5cf6]"],
+      button.bg-\[\#8b5cf6\] {
+        background: #414559 !important;
+        color: #ca9ee6 !important;
+        border: 1px solid rgba(202, 158, 230, 0.35) !important;
+        box-shadow: 0 0 8px rgba(202, 158, 230, 0.20) !important;
+        font-weight: 700 !important;
+        cursor: default !important;
+      }
+
+      /* --- App Name Focus --- */
+      [title*="Focused Window"]::before, [title*="Window"]::before {
+        content: "•" !important;
+        color: #838ba7 !important;
+        margin-right: 6px !important;
+        font-size: 13px !important;
+        vertical-align: middle !important;
+      }
+
+      /* --- Telemetry Badges (CPU, RAM, GPU, Time) --- */
+      [title*="CPU"], [title*="Memory"], [title*="RAM"], #gpu-badge, [title*="Date"], [title*="Time"] {
+        height: 22px !important;
+        padding: 0 8px !important;
+        border-radius: 5px !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.07) !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        color: #c6d0f5 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 5px !important;
+        transition: background 0.15s ease, border-color 0.15s ease !important;
+      }
+
+      [title*="CPU"], [title*="Memory"], [title*="RAM"], #gpu-badge {
+        cursor: pointer !important;
+      }
+
+      [title*="CPU"]:hover, [title*="Memory"]:hover, [title*="RAM"]:hover, #gpu-badge:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(202, 158, 230, 0.35) !important;
+      }
+
+      /* Typographic prefix labels */
+      [title*="CPU"]::before {
+        content: "CPU";
+        font-size: 10px;
+        font-weight: 700;
+        color: #838ba7;
+        letter-spacing: 0.5px;
+      }
+
+      [title*="Memory"]::before, [title*="RAM"]::before {
+        content: "RAM";
+        font-size: 10px;
+        font-weight: 700;
+        color: #838ba7;
+        letter-spacing: 0.5px;
+      }
+
+      .badge-lbl {
+        font-size: 10px;
+        font-weight: 700;
+        color: #838ba7;
+        letter-spacing: 0.5px;
+      }
+
+      .badge-val {
+        font-weight: 700;
+      }
+
+      /* --- Center Media Controls --- */
+      [title="No Media Active"] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+
+    <script>
+      // 1. Task Manager Click Handler
+      document.addEventListener('click', (e) => {
+        const target = e.target.closest('[title*="CPU"], [title*="Memory"], [title*="RAM"], #gpu-badge');
+        if (target && window.zebar && window.zebar.shell && window.zebar.shell.executeCommand) {
+          try {
+            window.zebar.shell.executeCommand('taskmgr.exe');
+          } catch(err) {}
+        }
+      });
+
+      // 2. Quadro P2000 GPU Badge Injection & Telemetry Poller
+      function ensureGpuBadge() {
+        let badge = document.getElementById('gpu-badge');
+        if (!badge) {
+          // Find the right column container (contains CPU, RAM, or Datetime)
+          const rightContainer = document.querySelector('[title*="CPU"], [title*="Memory"], [title*="Date"]')?.parentElement;
+          if (rightContainer) {
+            badge = document.createElement('div');
+            badge.id = 'gpu-badge';
+            badge.title = 'NVIDIA Quadro P2000 Temperature (Click for Task Manager)';
+            badge.innerHTML = '<span class="badge-lbl">P2000</span> <span id="gpu-val" class="badge-val">--°C</span>';
+            // Insert before the datetime/clock element or append
+            const dateEl = rightContainer.querySelector('[title*="Date"], [title*="Time"]');
+            if (dateEl) {
+              rightContainer.insertBefore(badge, dateEl);
+            } else {
+              rightContainer.appendChild(badge);
+            }
+          }
+        }
+      }
+
+      async function pollGpu() {
+        ensureGpuBadge();
+        const valEl = document.getElementById('gpu-val');
+        if (!valEl) return;
+
+        try {
+          const res = await fetch('./gpu.json?t=' + Date.now());
+          if (res.ok) {
+            const data = await res.json();
+            const temp = parseInt(data.temp, 10);
+            if (!isNaN(temp)) {
+              valEl.textContent = temp + '°C';
+              if (temp >= 75) {
+                valEl.style.color = '#e78284'; // Red (hot)
+              } else if (temp >= 60) {
+                valEl.style.color = '#ef9f76'; // Peach (warm)
+              } else {
+                valEl.style.color = '#a6d189'; // Green (cool)
+              }
+            }
+          }
+        } catch(e) {}
+      }
+
+      // Initial check & continuous poll every 2 seconds
+      setInterval(pollGpu, 2000);
+      setTimeout(pollGpu, 400);
+      setTimeout(pollGpu, 1200);
+    </script>
+  </body>
+</html>

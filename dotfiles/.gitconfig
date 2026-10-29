@@ -1,0 +1,32 @@
+[core]
+	autocrlf = input
+	editor = code --wait
+	ignorecase = false
+	quotepath = false
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = false
+
+[push]
+	autoSetupRemote = true
+
+[color]
+	ui = auto
+
+[alias]
+	st = status -sb
+	co = checkout
+	br = branch
+	ci = commit
+	cm = commit -m
+	ca = commit --amend --no-edit
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	undo = reset --soft HEAD~1
+
+[include]
+	path = ~/.gitconfig.user

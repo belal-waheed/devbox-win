@@ -1,0 +1,90 @@
+# ==============================================================================
+# devbox-win :: Active Configuration
+# Path: config.yaml
+# Description: Default ready-to-run development machine configuration.
+# ==============================================================================
+
+user:
+  name: "Developer"
+  email: "dev@localhost"
+  github_username: ""
+
+preset: fullstack
+
+modules:
+  packages: true
+  fonts: true
+  envvars: true
+  git: true
+  shell: true
+  editor: true
+  runtimes: true
+  databases: true
+  keybindings: true
+  glazewm: true
+  zebar: true
+  dotfiles: true
+
+packages:
+  - Microsoft.VisualStudioCode
+  - Git.Git
+  - GitHub.cli
+  - Microsoft.WindowsTerminal
+  - Starship.Starship
+  - 7zip.7zip
+  - DEVCOM.JetBrainsMonoNerdFont
+  - glzr-io.glazewm
+  - glzr-io.zebar
+
+shell:
+  prompt: starship
+  theme: custom
+
+git:
+  default_branch: main
+  autocrlf: input
+  generate_ssh_key: true
+  ssh_key_type: ed25519
+  gpg_signing: false
+
+editor:
+  primary: vscode
+  sync_settings: true
+  install_extensions: true
+
+fonts:
+  - JetBrainsMono
+
+runtimes:
+  node:
+    manager: nvm
+    default_version: lts
+  python:
+    manager: pyenv-win
+    default_version: "3.12"
+  rust:
+    install: true
+  dotnet:
+    versions:
+      - "8.0"
+
+databases:
+  - PostgreSQL.PostgreSQL
+  - Redis.Redis
+
+keybindings:
+  powertoys: true
+  autohotkey: true
+  startup_script: true
+
+glazewm:
+  install: true
+  autostart: true
+
+zebar:
+  install: true
+  autostart: true
+
+envvars:
+  EDITOR: code
+  DEVBOX_WIN: "true"

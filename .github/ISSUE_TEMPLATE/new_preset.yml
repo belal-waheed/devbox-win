@@ -1,0 +1,70 @@
+name: New Developer Preset Proposal
+description: Propose a new curated stack preset (e.g. mobile, data-science, embedded, game-dev)
+title: "[PRESET]: "
+labels: ["preset", "community"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Presets provide curated, role-based starter configurations for devbox-win (like `frontend`, `backend`, `devops`).
+        Use this template to propose a new role-based developer stack.
+
+  - type: input
+    id: preset_name
+    attributes:
+      label: Preset Name
+      description: Lowercase identifier for the preset (e.g. `datascience`, `flutter`, `gamedev`, `embedded`).
+      placeholder: "e.g. datascience"
+    validations:
+      required: true
+
+  - type: textarea
+    id: target_workflow
+    attributes:
+      label: Target Developer Role & Workflow
+      description: Who is this preset designed for, and what engineering tasks does it target?
+      placeholder: "This preset provides a complete machine setup for Python data scientists and ML engineers..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: packages
+    attributes:
+      label: Proposed Winget Packages
+      description: List the exact Winget package IDs to include by default.
+      placeholder: |
+        - Python.Python.3.12
+        - Anaconda.Miniconda3
+        - Git.Git
+        - Microsoft.VisualStudioCode
+    validations:
+      required: true
+
+  - type: textarea
+    id: runtimes
+    attributes:
+      label: Language Runtimes & Compilers
+      description: Which language versions and runtime managers should be enabled?
+      placeholder: "Python 3.12 via pyenv-win, Node LTS via nvm, C++ Build Tools..."
+
+  - type: textarea
+    id: editor_extensions
+    attributes:
+      label: Recommended VS Code Extensions
+      description: Extensions to include in this preset's profile.
+      placeholder: |
+        - ms-python.python
+        - ms-toolsai.jupyter
+        - charliermarsh.ruff
+
+  - type: checkboxes
+    id: requirements
+    attributes:
+      label: Quality Requirements
+      options:
+        - label: All proposed packages are available in the public winget repository.
+          required: true
+        - label: The preset does not conflict with existing core presets.
+          required: true
+        - label: The preset maintains the zero emojis standard and idempotent execution.
+          required: true

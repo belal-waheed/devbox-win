@@ -1,0 +1,29 @@
+# devbox-win curated Zebar configuration
+window:
+  width: "100%"
+  height: "28px"
+  position: "top"
+  resizable: false
+
+theme:
+  background: "#181818"
+  foreground: "#e0e0e0"
+  font_family: "JetBrainsMono Nerd Font"
+  font_size: "12px"
+
+components:
+  - type: "glazewm-workspaces"
+    align: "left"
+  - type: "glazewm-binding-modes"
+    align: "left"
+  - type: "glazewm-tiling-direction"
+    align: "left"
+  - type: "cpu"
+    align: "right"
+    format: "CPU: {usage}%"
+  - type: "memory"
+    align: "right"
+    format: "MEM: {usage}%"
+  - type: "clock"
+    align: "right"
+    format: "{time:HH:mm} | {date:yyyy-MM-dd}"

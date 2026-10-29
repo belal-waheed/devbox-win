@@ -1,0 +1,61 @@
+# ==============================================================================
+# devbox-win :: Preset: DevOps
+# Path: presets/devops.yaml
+# Description: Curated developer setup for containers, cloud tooling, and CLI workflows.
+# ==============================================================================
+
+preset: devops
+
+modules:
+  packages: true
+  fonts: true
+  git: true
+  shell: true
+  editor: true
+  runtimes: true
+  databases: false
+  envvars: true
+  keybindings: false
+  glazewm: false
+  zebar: false
+  dotfiles: true
+
+packages:
+  - Microsoft.VisualStudioCode
+  - Git.Git
+  - GitHub.cli
+  - Microsoft.WindowsTerminal
+  - Starship.Starship
+  - 7zip.7zip
+  - Docker.DockerDesktop
+  - Kubernetes.kubectl
+  - Helm.Helm
+  - DEVCOM.JetBrainsMonoNerdFont
+
+runtimes:
+  python:
+    manager: pyenv-win
+    default_version: "3.12"
+
+shell:
+  prompt: starship
+  theme: custom
+
+git:
+  default_branch: main
+  autocrlf: input
+  generate_ssh_key: true
+  ssh_key_type: ed25519
+  gpg_signing: false
+
+editor:
+  primary: vscode
+  sync_settings: true
+  install_extensions: true
+
+fonts:
+  - JetBrainsMono
+
+envvars:
+  EDITOR: code
+  DEVBOX_WIN: "true"

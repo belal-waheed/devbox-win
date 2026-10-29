@@ -1,0 +1,69 @@
+# ==============================================================================
+# devbox-win :: Preset: Backend
+# Path: presets/backend.yaml
+# Description: Curated developer setup for C#/.NET, Python, Rust, and Databases.
+# ==============================================================================
+
+preset: backend
+
+modules:
+  packages: true
+  fonts: true
+  git: true
+  shell: true
+  editor: true
+  runtimes: true
+  databases: true
+  envvars: true
+  keybindings: false
+  glazewm: false
+  zebar: false
+  dotfiles: true
+
+packages:
+  - Microsoft.VisualStudioCode
+  - Git.Git
+  - GitHub.cli
+  - Microsoft.WindowsTerminal
+  - Starship.Starship
+  - 7zip.7zip
+  - Docker.DockerDesktop
+  - Postman.Postman
+  - DEVCOM.JetBrainsMonoNerdFont
+
+runtimes:
+  dotnet:
+    versions:
+      - "8.0"
+  python:
+    manager: pyenv-win
+    default_version: "3.12"
+  rust:
+    install: true
+
+databases:
+  - PostgreSQL.PostgreSQL
+  - Redis.Redis
+
+shell:
+  prompt: starship
+  theme: custom
+
+git:
+  default_branch: main
+  autocrlf: input
+  generate_ssh_key: true
+  ssh_key_type: ed25519
+  gpg_signing: false
+
+editor:
+  primary: vscode
+  sync_settings: true
+  install_extensions: true
+
+fonts:
+  - JetBrainsMono
+
+envvars:
+  EDITOR: code
+  DEVBOX_WIN: "true"

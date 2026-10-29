@@ -1,0 +1,49 @@
+name: Feature Request
+description: Suggest an enhancement, new capability, or module for devbox-win
+title: "[FEATURE]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to make devbox-win even better? Share your proposal with the community below.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a specific workflow friction or missing functionality?
+      placeholder: "I frequently need to set up X, but currently devbox-win requires..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution or Implementation
+      description: Describe your proposed capability, module, or CLI flag.
+      placeholder: "Add a new module/flag that..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions Considered
+      description: Any alternative approaches or workarounds you considered or tested?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Affected Component Scope
+      options:
+        - "Core Engine (engine.ps1 / config.ps1 / state.ps1)"
+        - "Bootstrap Entry Point (bootstrap.ps1)"
+        - "Doctor Diagnostics (doctor.ps1)"
+        - "Workstation Exporter (export.ps1)"
+        - "New Provisioning Module"
+        - "Existing Provisioning Module"
+        - "Dotfiles or Default Profiles"
+        - "Documentation / CI/CD"
+    validations:
+      required: true

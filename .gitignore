@@ -1,0 +1,5 @@
+# devbox-win .gitignore
+*.log
+*.tmp
+.devbox-win/
+.vscode/

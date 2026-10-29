@@ -1,0 +1,186 @@
+{
+  "$schema": "https://github.com/glzr-io/zebar/raw/v3.0.0/resources/zpack-schema.json",
+  "name": "nord",
+  "version": "1.2.0",
+  "description": "Nordic Frosted Glass topbar for Zebar & GlazeWM",
+  "tags": [
+    "topbar",
+    "glazewm",
+    "nord",
+    "frosted-glass",
+    "arctic",
+    "north-bluish",
+    "minimal"
+  ],
+  "previewImages": [
+    "resources\\preview-image.png"
+  ],
+  "repositoryUrl": "https://github.com/quangbhdang/zebar-nord",
+  "widgets": [
+    {
+      "name": "glazewm",
+      "htmlPath": "./dist/glazewm/glazewm.html",
+      "zOrder": "normal",
+      "shownInTaskbar": false,
+      "focused": false,
+      "resizable": false,
+      "transparent": true,
+      "includeFiles": [
+        "dist/glazewm/**"
+      ],
+      "caching": {
+        "defaultDuration": 604800,
+        "rules": [
+          {
+            "urlRegex": ".*gpu\\.json.*",
+            "duration": 0
+          }
+        ]
+      },
+      "privileges": {
+        "shellCommands": [
+          {
+            "program": "ipconfig.exe",
+            "argsRegex": ".*"
+          },
+          {
+            "program": "Taskmgr.exe",
+            "argsRegex": ".*"
+          },
+          {
+            "program": "taskmgr.exe",
+            "argsRegex": ".*"
+          }
+        ]
+      },
+      "presets": [
+        {
+          "name": "default",
+          "anchor": "top_center",
+          "offsetX": "0px",
+          "offsetY": "2px",
+          "width": "100%",
+          "height": "34px",
+          "monitorSelection": {
+            "type": "all"
+          },
+          "dockToEdge": {
+            "enabled": false,
+            "edge": null,
+            "windowMargin": "0px"
+          }
+        }
+      ]
+    },
+    {
+      "name": "komorebi",
+      "htmlPath": "./dist/komorebi/komorebi.html",
+      "zOrder": "normal",
+      "shownInTaskbar": false,
+      "focused": false,
+      "resizable": true,
+      "transparent": true,
+      "includeFiles": [
+        "dist/komorebi/**"
+      ],
+      "caching": {
+        "defaultDuration": 604800,
+        "rules": [
+          {
+            "urlRegex": ".*gpu\\.json.*",
+            "duration": 0
+          }
+        ]
+      },
+      "privileges": {
+        "shellCommands": [
+          {
+            "program": "ipconfig.exe",
+            "argsRegex": ".*"
+          },
+          {
+            "program": "Taskmgr.exe",
+            "argsRegex": ".*"
+          },
+          {
+            "program": "taskmgr.exe",
+            "argsRegex": ".*"
+          }
+        ]
+      },
+      "presets": [
+        {
+          "name": "default",
+          "anchor": "top_center",
+          "offsetX": "0px",
+          "offsetY": "2px",
+          "width": "100%",
+          "height": "34px",
+          "monitorSelection": {
+            "type": "all"
+          },
+          "dockToEdge": {
+            "enabled": false,
+            "edge": null,
+            "windowMargin": "0px"
+          }
+        }
+      ]
+    },
+    {
+      "name": "vanilla",
+      "htmlPath": "./dist/vanilla/vanilla.html",
+      "zOrder": "normal",
+      "shownInTaskbar": false,
+      "focused": false,
+      "resizable": true,
+      "transparent": true,
+      "includeFiles": [
+        "dist/vanilla/**"
+      ],
+      "caching": {
+        "defaultDuration": 604800,
+        "rules": [
+          {
+            "urlRegex": ".*gpu\\.json.*",
+            "duration": 0
+          }
+        ]
+      },
+      "privileges": {
+        "shellCommands": [
+          {
+            "program": "ipconfig.exe",
+            "argsRegex": ".*"
+          },
+          {
+            "program": "Taskmgr.exe",
+            "argsRegex": ".*"
+          },
+          {
+            "program": "taskmgr.exe",
+            "argsRegex": ".*"
+          }
+        ]
+      },
+      "presets": [
+        {
+          "name": "default",
+          "anchor": "top_center",
+          "offsetX": "0px",
+          "offsetY": "2px",
+          "width": "100%",
+          "height": "34px",
+          "monitorSelection": {
+            "type": "all"
+          },
+          "dockToEdge": {
+            "enabled": false,
+            "edge": null,
+            "windowMargin": "0px"
+          }
+        }
+      ]
+    }
+  ]
+}

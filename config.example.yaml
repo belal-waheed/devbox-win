@@ -1,0 +1,114 @@
+# ==============================================================================
+# devbox-win :: Complete Reference Configuration
+# Path: config.example.yaml
+# Description: Example configuration defining all customizable settings across all 12 modules.
+# Fork this repository and copy to config.yaml to customize your setup.
+# ==============================================================================
+
+# User Identity (used for Git commits and SSH key comments)
+user:
+  name: "Your Name"
+  email: "you@example.com"
+  github_username: "yourgithub"
+
+# Role preset (frontend | backend | fullstack | devops | minimal | custom)
+# Presets supply curated base defaults that your explicit entries below override.
+preset: fullstack
+
+# Modules to execute (set to true/false to enable or disable)
+modules:
+  packages: true      # Winget packages
+  fonts: true         # Nerd Fonts
+  envvars: true       # User environment variables & PATH
+  git: true           # Git global configuration & SSH key
+  shell: true         # Windows Terminal & PowerShell profile
+  editor: true        # VS Code settings, keybindings, & extensions
+  runtimes: true      # Node, Python, Rust, .NET SDKs
+  databases: true     # PostgreSQL, Redis, MongoDB clients & engines
+  keybindings: true   # PowerToys & AutoHotkey v2 shortcuts
+  glazewm: true       # GlazeWM tiling window manager
+  zebar: true         # Zebar status bar
+  dotfiles: true      # Dotfile symlinks (.gitconfig, Starship, GlazeWM, Zebar, AHK)
+
+# Winget Package IDs
+# Browse package IDs at: https://winget.run
+packages:
+  - Microsoft.VisualStudioCode
+  - Git.Git
+  - GitHub.cli
+  - Microsoft.WindowsTerminal
+  - Starship.Starship
+  - 7zip.7zip
+  - DEVCOM.JetBrainsMonoNerdFont
+  - glzr-io.glazewm
+  - glzr-io.zebar
+
+# Shell & Terminal Settings
+shell:
+  prompt: starship        # starship | ohmyposh
+  theme: custom           # theme configuration in dotfiles/
+
+# Git Settings
+git:
+  default_branch: main
+  autocrlf: input         # input | true | false
+  generate_ssh_key: true  # Generate ed25519 key if not present
+  ssh_key_type: ed25519   # ed25519 | rsa
+  gpg_signing: false
+
+# Editor Settings (VS Code)
+editor:
+  primary: vscode
+  sync_settings: true     # Symlink settings.json and keybindings.json
+  install_extensions: true # Batch install extensions from dotfiles/vscode/extensions.txt
+
+# Font Families
+fonts:
+  - JetBrainsMono
+  - CascadiaCode
+
+# Language Runtimes
+runtimes:
+  node:
+    manager: nvm          # nvm | fnm
+    default_version: lts  # lts | 20 | 22
+  python:
+    manager: pyenv-win    # pyenv-win | winget
+    default_version: "3.12"
+  rust:
+    install: true         # via rustup
+  dotnet:
+    versions:
+      - "8.0"
+
+# Databases & CLI Tools
+databases:
+  - PostgreSQL.PostgreSQL # winget ID or CLI binary detection
+  - Redis.Redis
+
+# Keybindings & Window Management
+keybindings:
+  powertoys: true         # Microsoft PowerToys
+  autohotkey: true        # AutoHotkey v2
+  startup_script: true    # Symlink dotfiles/ahk/hotkeys.ahk to Windows Startup
+
+# GlazeWM Tiling Window Manager
+glazewm:
+  install: true           # Install glzr-io.glazewm via winget
+  autostart: true         # Register Windows startup shortcut
+
+# Zebar Status Bar
+zebar:
+  install: true           # Install glzr-io.zebar via winget
+  autostart: true         # Register Windows startup shortcut
+
+# Custom Environment Variables (User Scope)
+envvars:
+  EDITOR: code
+  DEVBOX_WIN: "true"
+
+# Community Module Extensions (optional modules in modules/community/)
+# Discover with: pwsh -NoProfile -File core/engine.ps1 -Marketplace
+# community_modules:
+#   - gaming
+#   - ai-tools

@@ -1,0 +1,45 @@
+# ==============================================================================
+# devbox-win :: Preset: Minimal
+# Path: presets/minimal.yaml
+# Description: Lightweight terminal, Git, and font baseline.
+# ==============================================================================
+
+preset: minimal
+
+modules:
+  packages: true
+  fonts: true
+  git: true
+  shell: true
+  editor: false
+  runtimes: false
+  databases: false
+  envvars: true
+  keybindings: false
+  glazewm: false
+  zebar: false
+  dotfiles: true
+
+packages:
+  - Git.Git
+  - GitHub.cli
+  - Microsoft.WindowsTerminal
+  - Starship.Starship
+  - DEVCOM.JetBrainsMonoNerdFont
+
+shell:
+  prompt: starship
+  theme: custom
+
+git:
+  default_branch: main
+  autocrlf: input
+  generate_ssh_key: true
+  ssh_key_type: ed25519
+  gpg_signing: false
+
+fonts:
+  - JetBrainsMono
+
+envvars:
+  DEVBOX_WIN: "true"

@@ -1,0 +1,95 @@
+# ==============================================================================
+# devbox-win :: Preset: Belal Catppuccin (Author Signature Rice)
+# Path: presets/belal-catppuccin.yaml
+# Description: Belal's signature tiling workstation with GlazeWM DWM cloaking,
+#              Catppuccin Mocha (#cba6f7 lavender) borders, Nord Zebar status bar,
+#              Zed & VS Code editors, Starship prompt, and full polyglot runtimes.
+# ==============================================================================
+
+preset: belal-catppuccin
+
+modules:
+  packages: true
+  fonts: true
+  git: true
+  shell: true
+  editor: true
+  runtimes: true
+  databases: true
+  envvars: true
+  keybindings: true
+  glazewm: true
+  zebar: true
+  dotfiles: true
+
+packages:
+  - Microsoft.VisualStudioCode
+  - Zed.Zed
+  - Git.Git
+  - GitHub.cli
+  - Google.Chrome
+  - Microsoft.WindowsTerminal
+  - Starship.Starship
+  - 7zip.7zip
+  - Docker.DockerDesktop
+  - DEVCOM.JetBrainsMonoNerdFont
+  - glzr-io.glazewm
+  - glzr-io.zebar
+  - AutoHotkey.AutoHotkey
+  - Microsoft.PowerToys
+
+runtimes:
+  node:
+    manager: fnm
+    default_version: lts
+  dotnet:
+    versions:
+      - "8.0"
+      - "9.0"
+  python:
+    manager: pyenv-win
+    default_version: "3.12"
+  rust:
+    install: true
+
+databases:
+  - PostgreSQL.PostgreSQL
+
+keybindings:
+  powertoys: true
+  autohotkey: true
+  startup_script: true
+
+glazewm:
+  install: true
+  autostart: true
+  hide_method: cloak
+  border_color: "#cba6f7"
+
+zebar:
+  install: true
+  autostart: true
+  pack: nord
+
+shell:
+  prompt: starship
+  theme: custom
+
+git:
+  default_branch: main
+  autocrlf: input
+  generate_ssh_key: true
+  ssh_key_type: ed25519
+  gpg_signing: false
+
+editor:
+  primary: zed
+  sync_settings: true
+  install_extensions: true
+
+fonts:
+  - JetBrainsMono
+
+envvars:
+  EDITOR: zed
+  DEVBOX_WIN: "true"

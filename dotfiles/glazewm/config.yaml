@@ -1,0 +1,497 @@
+general:
+  # Commands to run when the WM has started. This is useful for running a
+  # script or launching another application.
+  startup_commands: ["shell-exec zebar", "shell-exec wscript.exe //B \"%USERPROFILE%\\.glzr\\Launch-GPU.vbs\""]
+
+  # Commands to run just before the WM is shutdown.
+  shutdown_commands: ["shell-exec taskkill /IM zebar.exe /F"]
+
+  # Commands to run after the WM config is reloaded.
+  config_reload_commands:
+    ["shell-exec wscript.exe //B \"%USERPROFILE%\\.glzr\\Restart-Zebar.vbs\""]
+
+  # Whether to automatically focus windows underneath the cursor.
+  focus_follows_cursor: false
+
+  # Whether to switch back and forth between the previously focused
+  # workspace when focusing the current workspace.
+  toggle_workspace_on_refocus: false
+
+  cursor_jump:
+    # Whether to automatically move the cursor on the specified trigger.
+    enabled: true
+
+    # Trigger for cursor jump:
+    # - 'monitor_focus': Jump when focus changes between monitors.
+    # - 'window_focus': Jump when focus changes between windows.
+    trigger: "monitor_focus"
+
+  # How windows should be hidden when switching workspaces.
+  # - 'cloak': Recommended for newer systems.
+  # - 'hide': Legacy method that works natively with Windows 11 Alt+Tab by using Win32 SW_HIDE.
+  hide_method: "cloak"
+
+  # Affects which windows get shown in the native Windows taskbar.
+  # - 'true': Show all windows (regardless of workspace).
+  # - 'false': Only show windows from the currently shown workspaces.
+  show_all_in_taskbar: false
+
+gaps:
+  # Whether to scale the gaps with the DPI of the monitor.
+  scale_with_dpi: true
+
+  # Gap between adjacent windows.
+  inner_gap: "6px"
+
+  # Gap between windows and the screen edge. Top gap accommodates Zebar (36px + offset).
+  outer_gap:
+    top: "38px"
+    right: "6px"
+    bottom: "0px"
+    left: "6px"
+
+window_effects:
+  # Visual effects to apply to the focused window.
+  focused_window:
+    # Highlight the window with a colored border.
+    # ** Exclusive to Windows 11 due to API limitations.
+    border:
+      enabled: true
+      color: "#cba6f7"
+
+    # Remove the title bar from the window's frame.
+    hide_title_bar:
+      enabled: false
+
+    # Change the corner style of the window's frame.
+    corner_style:
+      enabled: true
+      style: "rounded"
+
+    # Change the transparency of the window.
+    transparency:
+      enabled: false
+      opacity: "100%"
+
+  # Visual effects to apply to non-focused windows.
+  other_windows:
+    border:
+      enabled: true
+      color: "#414559"
+    hide_title_bar:
+      enabled: false
+    corner_style:
+      enabled: true
+      style: "rounded"
+    transparency:
+      enabled: false
+      opacity: "100%"
+
+window_behavior:
+  # New windows are created in this state whenever possible.
+  # Allowed values: 'tiling', 'floating'.
+  initial_state: "tiling"
+
+  # Sets the default options for when a new window is created.
+  state_defaults:
+    tiling:
+      centered: true
+    floating:
+      # Whether to center floating windows by default. Set to false to allow natural cascading/staggering
+      centered: false
+
+      # Whether to show floating windows as always on top.
+      shown_on_top: false
+
+    fullscreen:
+      # Maximize the window if possible.
+      maximized: false
+
+      # Whether to show fullscreen windows as always on top.
+      shown_on_top: false
+
+workspaces:
+  - name: "1"
+  - name: "2"
+  - name: "3"
+  - name: "4"
+  - name: "5"
+  - name: "6"
+  - name: "7"
+  - name: "8"
+  - name: "9"
+
+window_rules:
+  # ============================================================================
+  # TIER 1: IGNORE RULES (System elements, shell, overlays, crashpad pipes)
+  # ============================================================================
+  - commands: ["ignore"]
+    match:
+      - window_process: { regex: "MSPCManager" }
+
+      # Taskbars, system trays, and desktop workers
+      - window_class: { equals: "Shell_TrayWnd" }
+      - window_class: { equals: "Shell_SecondaryTrayWnd" }
+      - window_class: { equals: "TopLevelWindowForOverflowXamlIsland" }
+      - window_class: { equals: "NotifyIconOverflowWindow" }
+      - window_class: { regex: "(?i)Progman|WorkerW" }
+      - window_process: { equals: "zebar" }
+
+      # Modern XAML & context menus
+      - window_class: { equals: "Xaml_WindowedPopupClass" }
+      - window_class: { equals: "Shell_InputSwitchTopLevelWindow" }
+
+      # Windows core windows & shell hosts
+      - window_class: { regex: '(?i)Windows\.UI\.Core\.CoreWindow' }
+      - window_process:
+          {
+            regex: "(?i)SearchHost|SearchApp|StartMenuExperienceHost|TextInputHost|ShellExperienceHost|LockApp",
+          }
+      - window_process: { regex: "(?i)Widgets|WidgetService" }
+
+      # Screen capture / screenshot overlays & Game Bar
+      - window_process:
+          {
+            regex: "(?i)Lightshot|ScreenClippingHost|SnippingToolHost|Flameshot|ShareX|Greenshot",
+          }
+      - window_title: { regex: "(?i)Lightshot|Select area" }
+      - window_process:
+          { regex: "(?i)GameBar|GameBarFTServer|XboxGamingOverlay" }
+
+      # Picture-in-Picture overlays (strictly scoped to standalone PiP popup windows)
+      - window_process:
+          { regex: "(?i)brave|chrome|msedge|firefox|zen|vivaldi|arc|opera" }
+        window_title: { regex: "(?i)^picture[- ]in[- ]picture$" }
+
+      # GPU overlays
+      - window_process:
+          {
+            regex: "(?i)NVIDIA GeForce Experience|NVIDIA Share|AMD Adrenalin|RadeonSoftware",
+          }
+      - window_class:
+          {
+            regex: "(?i)CEF-OSC-WIDGET|NvContainerWindowClass|AMDHdrPreviewClass",
+          }
+
+      # Remote Desktop & Virtualization
+      - window_process: { regex: "(?i)msrdc|mstsc|vmware|VirtualBoxVM" }
+
+      # PowerToys overlays
+      - window_process: { equals: "PowerToys" }
+        window_class: { regex: 'HwndWrapper\[PowerToys\..*?\]' }
+      - window_process:
+          {
+            regex: '(?i)PowerToys\.(ColorPickerUI|PowerLauncher|Awake|CropAndLock|Peek\.UI)',
+          }
+
+      # AutoHotkey background engines
+      - window_class: { equals: "AutoHotkey" }
+
+      # Windows Terminal Quake dropdown
+      - window_title: { regex: "(?i)_quake" }
+
+      # Fullscreen games & anti-cheat
+      - window_process:
+          {
+            regex: "(?i)BloodStrike|BloodStrike-Win64-Shipping|CombatMaster",
+          }
+      - window_title: { regex: "(?i)Blood Strike|Combat Master" }
+
+  # Dedicated Floating Terminals & FilePilot (Sized with natural cascading)
+  - commands: ["set-floating --width 1150px --height 720px"]
+    match:
+      - window_process: { regex: "(?i)FPilot|FilePilot" }
+      - window_title: { regex: "(?i)FilePilot" }
+      # - window_process:
+  #         {
+  #           regex: "(?i)WindowsTerminal|wt|pwsh|powershell|cmd|alacritty|wezterm|kitty",
+  #         }
+  #     - window_class:
+  #         { regex: "(?i)CASCADIA_HOSTING_WINDOW_CLASS|ConsoleWindowClass" }
+
+  # ============================================================================
+  # TIER 3: CENTERED DIALOGS & UTILITIES (Modals, Dialogs, Settings, System Tools)
+  # ============================================================================
+  - commands: ["set-floating --centered"]
+    match:
+      # Win32 dialogs (File Open/Save, message boxes, properties) & progress
+      - window_class: { regex: "^#32770$" }
+      - window_class: { equals: "OperationStatusWindow" }
+
+      # JetBrains IDE dialogs
+      - window_class: { equals: "SunAwtDialog" }
+
+      # System utilities
+      - window_process:
+          {
+            regex: "(?i)Taskmgr|Taskmgr64|SystemSettings|msiexec|regedit|mmc|cleanmgr|dxdiag|CredentialUIBroker|Consent.*",
+          }
+      - window_process: { regex: "(?i)CalculatorApp|Calculator|SnippingTool" }
+
+      # System dialog titles (anchored)
+      - window_title:
+          {
+            regex: "(?i)^(Task Manager|Settings|System Properties|Run|Device Manager|Registry Editor|Disk Management)$",
+          }
+
+      # Installers / Updaters (scoped to process)
+      - window_process:
+          {
+            regex: "(?i)msiexec|setup|installer|uninstaller|vs_installer|vs_installershell|vs_update",
+          }
+
+      # Search & Utilities
+      - window_process:
+          { regex: "(?i)Everything|QuickLook|Bitwarden|1Password|KeePassXC" }
+      - window_class: { equals: "AutoHotkeyGUI" }
+
+      # Secondary app windows
+      # Steam (friends list, guard, news, chat, settings)
+      - window_process: { equals: "steam" }
+        window_title:
+          {
+            regex: "(?i)Friends List|Steam Guard|Special Offers|News|Chat|Settings|Steam - News",
+          }
+
+      # Spotify mini-player
+      - window_process: { equals: "Spotify" }
+        window_title: { regex: "(?i)Mini Player" }
+
+      # Discord / Slack updater and voice/video panels
+      - window_process: { regex: "(?i)Discord|DiscordCanary|Slack" }
+        window_title: { regex: "(?i)Discord Updater|Voice Call|Screen Share" }
+
+      # Zoom / Teams meetings and popups
+      - window_process: { regex: "(?i)Zoom|Teams" }
+        window_title: { regex: "(?i)Zoom Meeting|Participants|Chat" }
+
+      # DaVinci Resolve dialogs & project manager
+      - window_process: { regex: "(?i)Resolve" }
+        window_title:
+          {
+            regex: "(?i)Project Manager|Render Queue|Project Settings|Preferences|Keyboard Customization",
+          }
+
+      # ShareX dialogs & utilities
+      - window_process: { regex: "(?i)ShareX" }
+        window_title:
+          {
+            regex: "(?i)Task settings|Application settings|History|Image history|Screen recording",
+          }
+
+      # AIMP player dialogs & utilities
+      - window_process: { regex: "(?i)AIMP" }
+        window_title:
+          {
+            regex: "(?i)Preferences|Tag Editor|Audio Converter|Sound Recorder|Queue Manager",
+          }
+
+      # Micro-utilities and compact tools
+      - window_process:
+          { regex: "(?i)Pomotroid|Velos|LocalSend|7zFM|7zG" }
+      - window_process: { regex: "(?i)AIMP" }
+        window_title: { regex: "(?i)AIMP" }
+
+  # ============================================================================
+  # TIER 4: TILING RULES (Primary Apps, Editors, Browsers, Messengers)
+  # ============================================================================
+  - commands: ["toggle-fullscreen --maximized=false", "set-tiling"]
+    match:
+      # Terminals
+      - window_process: { regex: "(?i)windowsterminal|wt" }
+
+      # Windows Explorer
+      - window_class: { equals: "CabinetWClass" }
+
+      # Code Editors & IDEs
+      - window_class: { equals: "Code" }
+      - window_class: { equals: "obsidian" }
+      - window_process:
+          {
+            regex: "(?i)Code|cursor|Antigravity|idea64|pycharm64|webstorm64|clion64|devenv|Ssms|Zed|soffice",
+          }
+      - window_title:
+          {
+            regex: "(?i)Visual Studio Code|Cursor|Antigravity|Obsidian|SQL Server Management Studio|Zed",
+          }
+
+      # Web Browsers (Main Application Windows)
+      - window_process:
+          { regex: "(?i)brave|chrome|msedge|firefox|zen|vivaldi|arc|opera" }
+
+      # Communication & Media (Main Windows)
+      - window_process: { regex: "(?i)Telegram" }
+      - window_process: { regex: "(?i)Discord|DiscordCanary" }
+      - window_process: { regex: "(?i)Spotify" }
+      - window_process: { equals: "steam" }
+        window_title: { equals: "Steam" }
+
+binding_modes:
+  # When enabled, the focused window can be resized via arrow keys or HJKL.
+  - name: "resize"
+    keybindings:
+      - commands: ["resize --width -2%"]
+        bindings: ["h", "left"]
+      - commands: ["resize --width +2%"]
+        bindings: ["l", "right"]
+      - commands: ["resize --height +2%"]
+        bindings: ["k", "up"]
+      - commands: ["resize --height -2%"]
+        bindings: ["j", "down"]
+      # Press enter/escape to return to default keybindings.
+      - commands: ["wm-disable-binding-mode --name resize"]
+        bindings: ["escape", "enter"]
+
+keybindings:
+  # ----------------------------------------------------------------------------
+  # Focus Navigation (Vim HJKL + Arrow Keys)
+  # ----------------------------------------------------------------------------
+  - commands: ["focus --direction left"]
+    bindings: ["alt+h", "alt+left"]
+  - commands: ["focus --direction right"]
+    bindings: ["alt+l", "alt+right"]
+  - commands: ["focus --direction up"]
+    bindings: ["alt+k", "alt+page_up"]
+  - commands: ["focus --direction down"]
+    bindings: ["alt+j", "alt+page_down"]
+
+  # ----------------------------------------------------------------------------
+  # Move Window Directionally
+  # ----------------------------------------------------------------------------
+  - commands: ["move --direction left"]
+    bindings: ["alt+shift+h", "alt+shift+left"]
+  - commands: ["move --direction right"]
+    bindings: ["alt+shift+l", "alt+shift+right"]
+  - commands: ["move --direction up"]
+    bindings: ["alt+shift+k", "alt+shift+page_up"]
+  - commands: ["move --direction down"]
+    bindings: ["alt+shift+j", "alt+shift+page_down"]
+
+  # ----------------------------------------------------------------------------
+  # Window Resizing
+  # ----------------------------------------------------------------------------
+  - commands: ["resize --width -2%"]
+    bindings: ["alt+["]
+  - commands: ["resize --width +2%"]
+    bindings: ["alt+]"]
+  - commands: ["resize --height +2%"]
+    bindings: ["alt+'"]
+  - commands: ["resize --height -2%"]
+    bindings: ["alt+;"]
+  - commands: ["wm-enable-binding-mode --name resize"]
+    bindings: ["alt+r"]
+
+  # ----------------------------------------------------------------------------
+  # Window State & Layout Control
+  # ----------------------------------------------------------------------------
+  # Change tiling direction (horizontal / vertical).
+  - commands: ["toggle-tiling-direction"]
+    bindings: ["alt+v"]
+
+  # Cycle focus between tiling, floating, and fullscreen windows.
+  - commands: ["wm-cycle-focus"]
+    bindings: ["alt+space"]
+
+  # Toggle floating mode for focused window.
+  - commands: ["toggle-floating --centered"]
+    bindings: ["alt+shift+space"]
+
+  # Force window into tiling mode.
+  - commands: ["toggle-tiling"]
+    bindings: ["alt+t"]
+
+  # Toggle fullscreen mode.
+  - commands: ["toggle-fullscreen --maximized"]
+    bindings: ["alt+f"]
+
+  # Minimize focused window.
+  - commands: ["toggle-minimized"]
+    bindings: ["alt+m"]
+
+  # Close focused window safely.
+  - commands: ["close"]
+    bindings: ["alt+`", "alt+f4"]
+
+  # ----------------------------------------------------------------------------
+  # Workspace Switching (Alt + 1..9)
+  # ----------------------------------------------------------------------------
+  - commands: ["focus --workspace 1"]
+    bindings: ["alt+1"]
+  - commands: ["focus --workspace 2"]
+    bindings: ["alt+2"]
+  - commands: ["focus --workspace 3"]
+    bindings: ["alt+3"]
+  - commands: ["focus --workspace 4"]
+    bindings: ["alt+4"]
+  - commands: ["focus --workspace 5"]
+    bindings: ["alt+5"]
+  - commands: ["focus --workspace 6"]
+    bindings: ["alt+6"]
+  - commands: ["focus --workspace 7"]
+    bindings: ["alt+7"]
+  - commands: ["focus --workspace 8"]
+    bindings: ["alt+8"]
+  - commands: ["focus --workspace 9"]
+    bindings: ["alt+9"]
+
+  # Switch to recent workspace.
+  - commands: ["focus --recent-workspace"]
+    bindings: ["alt+s"]
+
+  # ----------------------------------------------------------------------------
+  # Move Window to Workspace & Follow Focus (Alt + Shift + 1..9)
+  # ----------------------------------------------------------------------------
+  - commands: ["move --workspace 1", "focus --workspace 1"]
+    bindings: ["alt+shift+1"]
+  - commands: ["move --workspace 2", "focus --workspace 2"]
+    bindings: ["alt+shift+2"]
+  - commands: ["move --workspace 3", "focus --workspace 3"]
+    bindings: ["alt+shift+3"]
+  - commands: ["move --workspace 4", "focus --workspace 4"]
+    bindings: ["alt+shift+4"]
+  - commands: ["move --workspace 5", "focus --workspace 5"]
+    bindings: ["alt+shift+5"]
+  - commands: ["move --workspace 6", "focus --workspace 6"]
+    bindings: ["alt+shift+6"]
+  - commands: ["move --workspace 7", "focus --workspace 7"]
+    bindings: ["alt+shift+7"]
+  - commands: ["move --workspace 8", "focus --workspace 8"]
+    bindings: ["alt+shift+8"]
+  - commands: ["move --workspace 9", "focus --workspace 9"]
+    bindings: ["alt+shift+9"]
+
+  # ----------------------------------------------------------------------------
+  # Monitor / Workspace Directional Movement
+  # ----------------------------------------------------------------------------
+  - commands: ["move-workspace --direction left"]
+    bindings: ["alt+shift+u"]
+  - commands: ["move-workspace --direction right"]
+    bindings: ["alt+shift+o"]
+
+  # ----------------------------------------------------------------------------
+  # System, Shell, and Window Manager Operations
+  # ----------------------------------------------------------------------------
+  # Toggle SQL Server service (Direct service control via DACL)
+  - commands: ["shell-exec wscript.exe //B \"%USERPROFILE%\\.glzr\\Toggle-MSSQLServer.vbs\""]
+    bindings: ["alt+f1"]
+
+  # Launch Terminal.
+  - commands: ["shell-exec wt.exe"]
+    bindings: ["alt+/"]
+
+  # Reload GlazeWM configuration and restart Zebar.
+  - commands: ["wm-reload-config"]
+    bindings: ["alt+shift+r"]
+
+  # Redraw all windows to fix any visual artifacts.
+  - commands: ["wm-redraw"]
+    bindings: ["alt+shift+w"]
+
+  # Pause/Resume GlazeWM window management (useful during gaming/screen-share).
+  - commands: ["wm-toggle-pause"]
+    bindings: ["alt+shift+p"]
+
+  # Safe Exit GlazeWM.
+  - commands: ["wm-exit"]
+    bindings: ["alt+shift+e"]
+

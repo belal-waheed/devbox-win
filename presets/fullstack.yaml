@@ -1,0 +1,88 @@
+# ==============================================================================
+# devbox-win :: Preset: Fullstack
+# Path: presets/fullstack.yaml
+# Description: Comprehensive setup covering frontend, backend, docker, and tiling WM.
+# ==============================================================================
+
+preset: fullstack
+
+modules:
+  packages: true
+  fonts: true
+  git: true
+  shell: true
+  editor: true
+  runtimes: true
+  databases: true
+  envvars: true
+  keybindings: true
+  glazewm: true
+  zebar: true
+  dotfiles: true
+
+packages:
+  - Microsoft.VisualStudioCode
+  - Git.Git
+  - GitHub.cli
+  - Google.Chrome
+  - Microsoft.WindowsTerminal
+  - Starship.Starship
+  - 7zip.7zip
+  - Docker.DockerDesktop
+  - Postman.Postman
+  - DEVCOM.JetBrainsMonoNerdFont
+  - glzr-io.glazewm
+  - glzr-io.zebar
+
+runtimes:
+  node:
+    manager: nvm
+    default_version: lts
+  dotnet:
+    versions:
+      - "8.0"
+  python:
+    manager: pyenv-win
+    default_version: "3.12"
+  rust:
+    install: true
+
+databases:
+  - PostgreSQL.PostgreSQL
+  - Redis.Redis
+
+keybindings:
+  powertoys: true
+  autohotkey: true
+  startup_script: true
+
+glazewm:
+  install: true
+  autostart: true
+
+zebar:
+  install: true
+  autostart: true
+
+shell:
+  prompt: starship
+  theme: custom
+
+git:
+  default_branch: main
+  autocrlf: input
+  generate_ssh_key: true
+  ssh_key_type: ed25519
+  gpg_signing: false
+
+editor:
+  primary: vscode
+  sync_settings: true
+  install_extensions: true
+
+fonts:
+  - JetBrainsMono
+
+envvars:
+  EDITOR: code
+  DEVBOX_WIN: "true"
