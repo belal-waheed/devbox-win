@@ -13,6 +13,7 @@ param(
 Set-StrictMode -Version Latest
 
 . (Join-Path $PSScriptRoot "..\core\logger.ps1")
+. (Join-Path $PSScriptRoot "..\core\state.ps1")
 . (Join-Path $PSScriptRoot "..\core\manifest.ps1")
 
 function Test-CommandAvailable([string]$CommandName) {
@@ -44,6 +45,24 @@ function Invoke-DevboxRuntimesModule {
     $skippedCount   = 0
     $failedCount    = 0
 
+    $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+
+    # 0. Git
+    if ($runtimes.Contains("git") -and ($null -ne $runtimes["git"])) {
+        $gitEnabled = if ($runtimes["git"] -is [bool]) { $runtimes["git"] } elseif ($runtimes["git"].Contains("install")) { [bool]$runtimes["git"]["install"] } else { $true }
+        if ($gitEnabled) {
+            if (Test-CommandAvailable "git") {
+                Write-DevboxSkip "Git" "Git CLI already available"
+                $skippedCount++
+            } else {
+                $gitRes = Install-DevboxWingetPackage -PackageId "Git.Git" -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+                if ($gitRes.Skipped) { $skippedCount++ }
+                elseif ($gitRes.Success) { $installedCount++ }
+                else { $failedCount++ }
+            }
+        }
+    }
+
     # 1. Node.js (via nvm or fnm)
     if ($runtimes.Contains("node") -and ($null -ne $runtimes["node"])) {
         $nodeConfig = $runtimes["node"]
@@ -60,41 +79,24 @@ function Invoke-DevboxRuntimesModule {
             $managerCmd = if ($manager -eq "fnm") { "fnm" } else { "nvm" }
 
             if (-not (Test-CommandAvailable $managerCmd)) {
-                if ($DryRun) {
-                    Write-DevboxDryRun "Would install Node manager '$manager' ($pkgId) and Node $defaultVer"
+                $nodeRes = Install-DevboxWingetPackage -PackageId $pkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+                if ($nodeRes.Skipped) {
+                    $skippedCount++
+                } elseif ($nodeRes.Success) {
                     $installedCount++
-                } else {
-                    Write-DevboxInfo "Installing Node manager ($pkgId) via winget..."
-                    try {
-                        $p = Start-Process -FilePath "winget" `
-                            -ArgumentList "install", "--id", $pkgId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                            -NoNewWindow -PassThru -Wait
-
-                        if ($p.ExitCode -eq 0) {
-                            Write-DevboxOk "Installed Node manager: $pkgId"
-                            Add-DevboxManifestPackage -Manifest $manifest -PackageId $pkgId
-                            $installedCount++
-
-                            # Attempt to install default version if manager CLI is directly accessible
-                            if (Test-CommandAvailable $managerCmd) {
-                                Write-DevboxInfo "Installing Node.js $defaultVer via $manager..."
-                                if ($manager -eq "fnm") {
-                                    & fnm install $defaultVer
-                                    & fnm default $defaultVer
-                                } else {
-                                    & nvm install $defaultVer
-                                    & nvm use $defaultVer
-                                }
-                                Write-DevboxOk "Installed Node.js $defaultVer"
-                            }
+                    if (-not $DryRun -and (Test-CommandAvailable $managerCmd)) {
+                        Write-DevboxInfo "Installing Node.js $defaultVer via $manager..."
+                        if ($manager -eq "fnm") {
+                            & fnm install $defaultVer
+                            & fnm default $defaultVer
                         } else {
-                            Write-DevboxFail "Failed to install Node manager $pkgId (Exit code: $($p.ExitCode))"
-                            $failedCount++
+                            & nvm install $defaultVer
+                            & nvm use $defaultVer
                         }
-                    } catch {
-                        Write-DevboxFail "Error installing Node manager $pkgId" $_.Exception.Message
-                        $failedCount++
+                        Write-DevboxOk "Installed Node.js $defaultVer"
                     }
+                } else {
+                    $failedCount++
                 }
             } else {
                 Write-DevboxSkip "Node Manager" "$manager is already installed"
@@ -120,53 +122,18 @@ function Invoke-DevboxRuntimesModule {
                 if (Test-CommandAvailable "pyenv") {
                     Write-DevboxSkip "pyenv-win" "pyenv is already installed"
                     $skippedCount++
-                } elseif ($DryRun) {
-                    Write-DevboxDryRun "Would install pyenv-win and Python $pyVer"
-                    $installedCount++
                 } else {
-                    Write-DevboxInfo "Installing pyenv-win via winget..."
-                    try {
-                        $p = Start-Process -FilePath "winget" `
-                            -ArgumentList "install", "--id", $pyPkg, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                            -NoNewWindow -PassThru -Wait
-                        if ($p.ExitCode -eq 0) {
-                            Write-DevboxOk "Installed pyenv-win"
-                            Add-DevboxManifestPackage -Manifest $manifest -PackageId $pyPkg
-                            $installedCount++
-                        } else {
-                            Write-DevboxFail "Failed to install pyenv-win (Exit code: $($p.ExitCode))"
-                            $failedCount++
-                        }
-                    } catch {
-                        Write-DevboxFail "Error installing pyenv-win" $_.Exception.Message
-                        $failedCount++
-                    }
+                    $pyRes = Install-DevboxWingetPackage -PackageId $pyPkg -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+                    if ($pyRes.Skipped) { $skippedCount++ }
+                    elseif ($pyRes.Success) { $installedCount++ }
+                    else { $failedCount++ }
                 }
             } else {
-                # Direct winget install
                 $wingetPyPkg = "Python.Python.$pyVer"
-                if ($DryRun) {
-                    Write-DevboxDryRun "Would install $wingetPyPkg via winget"
-                    $installedCount++
-                } else {
-                    Write-DevboxInfo "Installing $wingetPyPkg via winget..."
-                    try {
-                        $p = Start-Process -FilePath "winget" `
-                            -ArgumentList "install", "--id", $wingetPyPkg, "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                            -NoNewWindow -PassThru -Wait
-                        if ($p.ExitCode -eq 0) {
-                            Write-DevboxOk "Installed $wingetPyPkg"
-                            Add-DevboxManifestPackage -Manifest $manifest -PackageId $wingetPyPkg
-                            $installedCount++
-                        } else {
-                            Write-DevboxFail "Failed to install $wingetPyPkg (Exit code: $($p.ExitCode))"
-                            $failedCount++
-                        }
-                    } catch {
-                        Write-DevboxFail "Error installing $wingetPyPkg" $_.Exception.Message
-                        $failedCount++
-                    }
-                }
+                $pyRes = Install-DevboxWingetPackage -PackageId $wingetPyPkg -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+                if ($pyRes.Skipped) { $skippedCount++ }
+                elseif ($pyRes.Success) { $installedCount++ }
+                else { $failedCount++ }
             }
         }
     }
@@ -183,27 +150,11 @@ function Invoke-DevboxRuntimesModule {
             if ($cargoInstalled -or $rustupInstalled) {
                 Write-DevboxSkip "Rust" "Rust toolchain already installed"
                 $skippedCount++
-            } elseif ($DryRun) {
-                Write-DevboxDryRun "Would install Rustlang.Rustup via winget"
-                $installedCount++
             } else {
-                Write-DevboxInfo "Installing Rustup via winget..."
-                try {
-                    $p = Start-Process -FilePath "winget" `
-                        -ArgumentList "install", "--id", "Rustlang.Rustup", "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                        -NoNewWindow -PassThru -Wait
-                    if ($p.ExitCode -eq 0) {
-                        Write-DevboxOk "Installed Rustup toolchain"
-                        Add-DevboxManifestPackage -Manifest $manifest -PackageId "Rustlang.Rustup"
-                        $installedCount++
-                    } else {
-                        Write-DevboxFail "Failed to install Rustup (Exit code: $($p.ExitCode))"
-                        $failedCount++
-                    }
-                } catch {
-                    Write-DevboxFail "Error installing Rustup" $_.Exception.Message
-                    $failedCount++
-                }
+                $rustRes = Install-DevboxWingetPackage -PackageId "Rustlang.Rustup" -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+                if ($rustRes.Skipped) { $skippedCount++ }
+                elseif ($rustRes.Success) { $installedCount++ }
+                else { $failedCount++ }
             }
         }
     }
@@ -221,38 +172,21 @@ function Invoke-DevboxRuntimesModule {
         foreach ($reqVer in $requestedVersions) {
             $vStr = $reqVer.ToString().Trim()
             $majorPrefix = $vStr.TrimStart('v')
-            # Check if installed
             if ($installedSdks -and ($installedSdks -match "(?m)^$([regex]::Escape($majorPrefix))\.")) {
                 Write-DevboxSkip ".NET SDK $vStr" "Already installed"
                 $skippedCount++
                 continue
             }
 
-            # Map to winget package ID: e.g. "8.0" -> "Microsoft.DotNet.SDK.8"
             $majorNum = ($majorPrefix -split '\.')[0]
             $sdkPkgId = "Microsoft.DotNet.SDK.$majorNum"
 
-            if ($DryRun) {
-                Write-DevboxDryRun "Would install .NET SDK $vStr ($sdkPkgId) via winget"
+            $netRes = Install-DevboxWingetPackage -PackageId $sdkPkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+            if ($netRes.Skipped) {
+                $skippedCount++
+            } elseif ($netRes.Success) {
                 $installedCount++
-                continue
-            }
-
-            Write-DevboxInfo "Installing .NET SDK $vStr ($sdkPkgId) via winget..."
-            try {
-                $p = Start-Process -FilePath "winget" `
-                    -ArgumentList "install", "--id", $sdkPkgId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                    -NoNewWindow -PassThru -Wait
-                if ($p.ExitCode -eq 0) {
-                    Write-DevboxOk "Installed .NET SDK $vStr ($sdkPkgId)"
-                    Add-DevboxManifestPackage -Manifest $manifest -PackageId $sdkPkgId
-                    $installedCount++
-                } else {
-                    Write-DevboxFail "Failed to install $sdkPkgId (Exit code: $($p.ExitCode))"
-                    $failedCount++
-                }
-            } catch {
-                Write-DevboxFail "Error installing $sdkPkgId" $_.Exception.Message
+            } else {
                 $failedCount++
             }
         }

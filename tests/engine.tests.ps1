@@ -399,8 +399,63 @@ Assert-True ($parsedGuiYaml.preset -eq "belal-catppuccin") "GUI exported YAML pa
 Assert-True ($parsedGuiYaml.packages.Count -eq 2) "GUI exported YAML parses packages count"
 Remove-Item -Path $tmpGuiYaml -Force -ErrorAction SilentlyContinue
 
-# Test 17: AST Syntax Check on all ps1 files
-Write-DevboxSection "Test: PowerShell AST Syntax Validation"
+# Test 17: Core Winget Package Engine and Custom Install Paths
+Write-DevboxSection "Test: Core Winget Package Engine and Custom Install Paths"
+$dryRunRes = Install-DevboxWingetPackage -PackageId "NonExistent.MockPackage.999" -Location "D:\CustomTools" -DryRun
+Assert-True ($dryRunRes.Success -eq $true -and $dryRunRes.DryRun -eq $true) "Install-DevboxWingetPackage dry-run succeeds"
+Assert-True ($dryRunRes.Location -eq "D:\CustomTools") "Install-DevboxWingetPackage respects custom --location in dry-run"
+
+# Test package already installed fast
+$dummyInstalledId = "Existing.MockPackage.111"
+$null = Get-DevboxInstalledPackageSet
+if ($null -ne $global:DevboxInstalledPackageCache) {
+    [void]$global:DevboxInstalledPackageCache.Add($dummyInstalledId)
+}
+$alreadyInstalledRes = Install-DevboxWingetPackage -PackageId $dummyInstalledId -Location "D:\CustomTools"
+Assert-True ($alreadyInstalledRes.Success -eq $true -and $alreadyInstalledRes.Skipped -eq $true) "Install-DevboxWingetPackage skips already installed packages"
+
+# Test 18: GUI Config Compiler Custom Path & XAML Components
+Write-DevboxSection "Test: GUI Config Compiler and Custom Path Components"
+$guiContent = Get-Content -Path $guiPath -Raw -Encoding utf8
+Assert-True ($guiContent -match 'x:Name="txtCustomPath"') "core/gui.ps1 XAML contains txtCustomPath TextBox"
+Assert-True ($guiContent -match 'x:Name="btnBrowsePath"') "core/gui.ps1 XAML contains btnBrowsePath Button"
+
+$dummyConfigWithPaths = [ordered]@{
+    user = [ordered]@{ name = "TestUser"; email = "test@domain.com"; github_username = "testgit" }
+    preset = "custom"
+    paths = [ordered]@{ apps = "D:\DevBoxTools" }
+    install_location = "D:\DevBoxTools"
+    modules = [ordered]@{ packages = $true; fonts = $true; git = $true; shell = $true; editor = $true; runtimes = $true; databases = $true; envvars = $true; keybindings = $true; glazewm = $true; zebar = $true; dotfiles = $true }
+    packages = @("Zed.Zed")
+    databases = @()
+    community_modules = @()
+    editor = [ordered]@{ primary = "zed"; sync_settings = $true; install_extensions = $true }
+    git = [ordered]@{ default_branch = "main"; autocrlf = "input"; generate_ssh_key = $true; ssh_key_type = "ed25519" }
+    runtimes = [ordered]@{ node = $true; python = $true; rust = $false; dotnet = $false }
+    glazewm = [ordered]@{ install = $true; autostart = $true; hide_method = "cloak"; border_color = "#cba6f7" }
+    zebar = [ordered]@{ install = $true; autostart = $true; pack = "nord" }
+}
+
+$tmpGuiYaml2 = Join-Path $env:TEMP "test_gui_custom_path_$([System.Guid]::NewGuid().ToString('N').Substring(0,8)).yaml"
+Export-GuiConfigToYamlFile -Config $dummyConfigWithPaths -Path $tmpGuiYaml2
+Assert-True (Test-Path $tmpGuiYaml2) "GUI exported YAML with paths exists"
+$parsedGuiYaml2 = Read-DevboxConfigFile -Path $tmpGuiYaml2 -SkipPresetResolution
+Assert-True ($parsedGuiYaml2.paths.apps -eq "D:\DevBoxTools") "GUI config compiler correctly captures paths.apps"
+Assert-True ($parsedGuiYaml2.install_location -eq "D:\DevBoxTools") "GUI config compiler correctly captures install_location"
+Remove-Item -Path $tmpGuiYaml2 -Force -ErrorAction SilentlyContinue
+
+# Test 19: CLI Parameters and Engine Install Location
+Write-DevboxSection "Test: CLI Parameters and Engine Install Location"
+$engineCmd = Get-Command (Join-Path $projectRoot "core\engine.ps1")
+Assert-True ($engineCmd.Parameters.ContainsKey("InstallLocation")) "core/engine.ps1 accepts -InstallLocation parameter"
+
+$bootCmd = Get-Command (Join-Path $projectRoot "bootstrap.ps1")
+Assert-True ($bootCmd.Parameters.ContainsKey("InstallLocation")) "bootstrap.ps1 accepts -InstallLocation parameter"
+
+$engineDryOutput = & pwsh -NoProfile -File (Join-Path $projectRoot "core\engine.ps1") -ConfigFile (Join-Path $projectRoot "config.example.yaml") -InstallLocation "E:\EngineCustomPath" -Module "packages" -DryRun 2>&1 | Out-String
+Assert-True ($engineDryOutput -match "DRY RUN MODE ENABLED") "Engine executes with -InstallLocation in dry-run mode"
+
+# Test 20: PowerShell AST Syntax Validation
 $allScripts = Get-ChildItem -Path $projectRoot -Filter "*.ps1" -Recurse
 foreach ($s in $allScripts) {
     $tokens = $null

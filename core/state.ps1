@@ -7,6 +7,13 @@
 
 Set-StrictMode -Version Latest
 
+if (Test-Path (Join-Path $PSScriptRoot "logger.ps1")) {
+    . (Join-Path $PSScriptRoot "logger.ps1")
+}
+if (Test-Path (Join-Path $PSScriptRoot "manifest.ps1")) {
+    . (Join-Path $PSScriptRoot "manifest.ps1")
+}
+
 function Get-DevboxStateDir {
     $dir = Join-Path $HOME ".devbox-win"
     if (-not (Test-Path $dir)) {
@@ -66,7 +73,7 @@ function Get-DevboxInstalledPackageSet {
     param([switch]$ForceRefresh)
 
     if ($null -ne $global:DevboxInstalledPackageCache -and (-not $ForceRefresh)) {
-        return $global:DevboxInstalledPackageCache
+        return ,$global:DevboxInstalledPackageCache
     }
 
     $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -93,7 +100,7 @@ function Get-DevboxInstalledPackageSet {
     }
 
     $global:DevboxInstalledPackageCache = $set
-    return $set
+    return ,$set
 }
 
 function Test-DevboxPackageInstalledFast {
@@ -103,21 +110,143 @@ function Test-DevboxPackageInstalledFast {
     )
 
     $set = Get-DevboxInstalledPackageSet
-    if ($set.Contains($PackageId)) {
-        return $true
+    if ($set -is [System.Collections.Generic.HashSet[string]]) {
+        if ($set.Contains($PackageId)) {
+            return $true
+        }
+    } else {
+        if ($set -contains $PackageId) {
+            return $true
+        }
     }
 
     if ($CheckCliFallback -and (Get-Command "winget" -ErrorAction SilentlyContinue)) {
         try {
             $result = & winget list --id $PackageId --exact --accept-source-agreements 2>$null | Out-String
             if ($result -match [regex]::Escape($PackageId)) {
-                [void]$set.Add($PackageId)
+                if ($set -is [System.Collections.Generic.HashSet[string]]) {
+                    [void]$set.Add($PackageId)
+                }
                 return $true
             }
         } catch { }
     }
 
     return $false
+}
+
+function Install-DevboxWingetPackage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PackageId,
+        [string]$Location = "",
+        [int]$TimeoutSeconds = 180,
+        [hashtable]$Manifest = $null,
+        [switch]$DryRun
+    )
+
+    if (Test-DevboxPackageInstalledFast -PackageId $PackageId) {
+        if (Get-Command "Write-DevboxSkip" -ErrorAction SilentlyContinue) {
+            Write-DevboxSkip $PackageId "Already installed"
+        }
+        return @{ Success = $true; Skipped = $true }
+    }
+
+    if ($DryRun) {
+        $locMsg = if (-not [string]::IsNullOrWhiteSpace($Location)) { " (Location: '$Location')" } else { "" }
+        if (Get-Command "Write-DevboxOk" -ErrorAction SilentlyContinue) {
+            Write-DevboxOk "[DRY-RUN] Would install $PackageId via winget$locMsg"
+        } else {
+            Write-Host "  [OK] [DRY-RUN] Would install $PackageId via winget$locMsg"
+        }
+        return @{ Success = $true; DryRun = $true; Location = $Location }
+    }
+
+    $baseArgs = @("install", "--id", $PackageId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements")
+    $argsToRun = @($baseArgs)
+    $hasCustomLocation = (-not [string]::IsNullOrWhiteSpace($Location))
+    if ($hasCustomLocation) {
+        $argsToRun += @("--location", $Location)
+        if (Get-Command "Write-DevboxInfo" -ErrorAction SilentlyContinue) {
+            Write-DevboxInfo "Installing $PackageId via winget (custom location: '$Location')..."
+        }
+    } else {
+        if (Get-Command "Write-DevboxInfo" -ErrorAction SilentlyContinue) {
+            Write-DevboxInfo "Installing $PackageId via winget..."
+        }
+    }
+
+    $timeoutMs = $TimeoutSeconds * 1000
+
+    function Invoke-WingetCli([string[]]$cliArgs) {
+        try {
+            $p = Start-Process -FilePath "winget" -ArgumentList $cliArgs -NoNewWindow -PassThru
+            $exited = $p.WaitForExit($timeoutMs)
+            if (-not $exited) {
+                try { $p.Kill($true) } catch { }
+                return @{ TimedOut = $true; ExitCode = -1 }
+            }
+            return @{ TimedOut = $false; ExitCode = $p.ExitCode }
+        } catch {
+            return @{ TimedOut = $false; ExitCode = -1; Error = $_.Exception.Message }
+        }
+    }
+
+    $execRes = Invoke-WingetCli -cliArgs $argsToRun
+
+    if ($execRes.TimedOut) {
+        if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
+            Write-DevboxFail "Package $PackageId installation timed out (circuit breaker triggered)"
+        }
+        return @{ Success = $false; ExitCode = -1; TimedOut = $true }
+    }
+
+    $exitCode = $execRes.ExitCode
+
+    if (($exitCode -eq -1978335212 -or $exitCode -eq [int]0x8a150014) -and $hasCustomLocation) {
+        if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
+            Write-DevboxWarn "Package '$PackageId' does not support custom installation location. Retrying with default location..."
+        } else {
+            Write-Host "  [WARN] Package '$PackageId' does not support custom installation location. Retrying with default location..."
+        }
+
+        $execRes = Invoke-WingetCli -cliArgs $baseArgs
+        if ($execRes.TimedOut) {
+            if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
+                Write-DevboxFail "Package $PackageId installation timed out on retry (circuit breaker triggered)"
+            }
+            return @{ Success = $false; ExitCode = -1; TimedOut = $true }
+        }
+        $exitCode = $execRes.ExitCode
+    }
+
+    if ($exitCode -eq 0) {
+        if (Get-Command "Write-DevboxOk" -ErrorAction SilentlyContinue) {
+            Write-DevboxOk "Installed: $PackageId"
+        }
+        if ($null -ne $Manifest -and (Get-Command "Add-DevboxManifestPackage" -ErrorAction SilentlyContinue)) {
+            Add-DevboxManifestPackage -Manifest $Manifest -PackageId $PackageId
+        }
+        if ($null -eq $global:DevboxInstalledPackageCache) {
+            Get-DevboxInstalledPackageSet | Out-Null
+        }
+        if ($null -ne $global:DevboxInstalledPackageCache) {
+            $global:DevboxInstalledPackageCache.Add($PackageId) | Out-Null
+        }
+        return @{ Success = $true; Skipped = $false }
+    } elseif ($exitCode -eq -1978335189) {
+        if (Get-Command "Write-DevboxSkip" -ErrorAction SilentlyContinue) {
+            Write-DevboxSkip $PackageId "Already installed"
+        }
+        return @{ Success = $true; Skipped = $true }
+    } else {
+        $detail = if ($execRes.ContainsKey("Error")) { $execRes.Error } else { "" }
+        if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
+            Write-DevboxFail "Failed to install: $PackageId (Exit code: $exitCode)" $detail
+        }
+        return @{ Success = $false; ExitCode = $exitCode }
+    }
 }
 
 function Set-DevboxModuleResult {

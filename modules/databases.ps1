@@ -64,6 +64,8 @@ function Invoke-DevboxDatabasesModule {
 
     Write-DevboxInfo "Evaluating $($dbList.Count) database client(s) and toolchain(s)..."
 
+    $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+
     foreach ($dbItem in $dbList) {
         if (-not $dbItem) { continue }
         $pkgId = $dbItem.ToString().Trim()
@@ -74,31 +76,12 @@ function Invoke-DevboxDatabasesModule {
             continue
         }
 
-        if ($DryRun) {
-            Write-DevboxDryRun "Would install database package: $pkgId"
+        $res = Install-DevboxWingetPackage -PackageId $pkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+        if ($res.Skipped) {
+            $skippedCount++
+        } elseif ($res.Success) {
             $installedCount++
-            continue
-        }
-
-        Write-DevboxInfo "Installing database tool $pkgId via winget..."
-        try {
-            $p = Start-Process -FilePath "winget" `
-                -ArgumentList "install", "--id", $pkgId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                -NoNewWindow -PassThru -Wait
-
-            if ($p.ExitCode -eq 0) {
-                Write-DevboxOk "Installed database tool: $pkgId"
-                Add-DevboxManifestPackage -Manifest $manifest -PackageId $pkgId
-                $installedCount++
-            } elseif ($p.ExitCode -eq -1978335189) {
-                Write-DevboxSkip $pkgId "Already installed"
-                $skippedCount++
-            } else {
-                Write-DevboxFail "Failed to install $pkgId (Exit code: $($p.ExitCode))"
-                $failedCount++
-            }
-        } catch {
-            Write-DevboxFail "Error installing $pkgId" $_.Exception.Message
+        } else {
             $failedCount++
         }
     }

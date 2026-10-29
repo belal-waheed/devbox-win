@@ -13,6 +13,7 @@ param(
 Set-StrictMode -Version Latest
 
 . (Join-Path $PSScriptRoot "..\core\logger.ps1")
+. (Join-Path $PSScriptRoot "..\core\state.ps1")
 . (Join-Path $PSScriptRoot "..\core\manifest.ps1")
 . (Join-Path $PSScriptRoot "..\core\symlink.ps1")
 
@@ -60,32 +61,15 @@ function Invoke-DevboxGlazewmModule {
             Write-DevboxSkip "GlazeWM" "GlazeWM executable already present at '$exePath'"
             $skippedCount++
         } else {
-            if ($DryRun) {
-                Write-DevboxDryRun "Would install GlazeWM ($pkgId) via winget"
+            $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+            $res = Install-DevboxWingetPackage -PackageId $pkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+            if ($res.Skipped) {
+                $skippedCount++
+            } elseif ($res.Success) {
                 $installedCount++
+                $exePath = Find-GlazewmExecutable
             } else {
-                Write-DevboxInfo "Installing GlazeWM ($pkgId) via winget..."
-                try {
-                    $p = Start-Process -FilePath "winget" `
-                        -ArgumentList "install", "--id", $pkgId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                        -NoNewWindow -PassThru -Wait
-
-                    if ($p.ExitCode -eq 0) {
-                        Write-DevboxOk "Installed GlazeWM ($pkgId)"
-                        Add-DevboxManifestPackage -Manifest $manifest -PackageId $pkgId
-                        $installedCount++
-                        $exePath = Find-GlazewmExecutable
-                    } elseif ($p.ExitCode -eq -1978335189) {
-                        Write-DevboxSkip "GlazeWM" "Package already installed"
-                        $skippedCount++
-                    } else {
-                        Write-DevboxFail "Failed to install GlazeWM (Exit code: $($p.ExitCode))"
-                        $failedCount++
-                    }
-                } catch {
-                    Write-DevboxFail "Error installing GlazeWM" $_.Exception.Message
-                    $failedCount++
-                }
+                $failedCount++
             }
         }
     }

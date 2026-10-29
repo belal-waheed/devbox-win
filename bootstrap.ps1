@@ -13,6 +13,7 @@ param(
     [string]$Branch = "main",
     [string]$TargetDir = "",
     [string]$ConfigFile = "",
+    [string]$InstallLocation = "",
     [switch]$DryRun,
     [string]$Module = "",
     [switch]$Retry,
@@ -153,6 +154,8 @@ if ($psMajor -lt 7) {
         }
 
         $argList = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $scriptPath)
+        if ($ConfigFile) { $argList += "-ConfigFile"; $argList += $ConfigFile }
+        if ($InstallLocation) { $argList += "-InstallLocation"; $argList += $InstallLocation }
         if ($DryRun) { $argList += "-DryRun" }
         if ($Module) { $argList += "-Module"; $argList += $Module }
         if ($Retry)  { $argList += "-Retry" }
@@ -230,6 +233,7 @@ if (-not (Test-Path $engineScript)) {
 
 $engineParams = @{}
 if ($ConfigFile) { $engineParams["ConfigFile"] = $ConfigFile }
+if ($InstallLocation) { $engineParams["InstallLocation"] = $InstallLocation }
 if ($DryRun)     { $engineParams["DryRun"] = $true }
 if ($Module)     { $engineParams["Module"] = $Module }
 if ($Retry)      { $engineParams["Retry"] = $true }
@@ -257,15 +261,10 @@ if ($Help)       { $engineParams["Help"] = $true }
 
 # Interactive Desktop Mode (CTT winutil style):
 # When executed without batch parameters in an interactive console, default to GUI utility.
-$canLaunchGui = $false
-try {
-    if ([Environment]::UserInteractive -and (-not [Console]::IsInputRedirected) -and (-not [Console]::IsOutputRedirected)) {
-        $canLaunchGui = $true
-    }
-} catch { }
+Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
 
 $guiScript = Join-Path $workDir "core\gui.ps1"
-if ($canLaunchGui -and (Test-Path $guiScript) -and (($engineParams.Count -eq 0) -or $Gui) -and (-not $NonInteractive) -and (-not $Silent)) {
+if ([System.Windows.Forms.SystemInformation]::UserInteractive -and (Test-Path $guiScript) -and (($engineParams.Count -eq 0) -or $Gui) -and (-not $NonInteractive) -and (-not $Silent)) {
     Write-BootInfo "Launching devbox-win Windows Developer Utility (GUI)..."
     $guiResult = & $guiScript -RepoRoot $workDir
     if ($null -ne $guiResult -and $guiResult.Action -ne "Cancel") {
@@ -282,6 +281,7 @@ if ($canLaunchGui -and (Test-Path $guiScript) -and (($engineParams.Count -eq 0) 
             exit $LASTEXITCODE
         }
         if ($guiResult.Action -in @("Install", "DryRun")) {
+            . (Join-Path $workDir "core\config.ps1")
             $userConfigYaml = Join-Path $workDir "config.yaml"
             Export-GuiConfigToYamlFile -Config $guiResult.Config -Path $userConfigYaml
             $isDry = ($guiResult.DryRun -or $DryRun)

@@ -97,6 +97,8 @@ function Invoke-DevboxKeybindingsModule {
     $ahkEnabled       = if ($keyConfig.Contains("autohotkey")) { [bool]$keyConfig["autohotkey"] } else { $false }
     $startupEnabled   = if ($keyConfig.Contains("startup_script")) { [bool]$keyConfig["startup_script"] } else { $ahkEnabled }
 
+    $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+
     # 1. PowerToys
     if ($powertoysEnabled) {
         $ptPkg = "Microsoft.PowerToys"
@@ -105,25 +107,13 @@ function Invoke-DevboxKeybindingsModule {
         if ($ptInstalled) {
             Write-DevboxSkip "PowerToys" "Microsoft.PowerToys is already installed"
             $skippedCount++
-        } elseif ($DryRun) {
-            Write-DevboxDryRun "Would install $ptPkg via winget"
-            $installedCount++
         } else {
-            Write-DevboxInfo "Installing PowerToys via winget..."
-            try {
-                $p = Start-Process -FilePath "winget" `
-                    -ArgumentList "install", "--id", $ptPkg, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                    -NoNewWindow -PassThru -Wait
-                if ($p.ExitCode -eq 0) {
-                    Write-DevboxOk "Installed PowerToys"
-                    Add-DevboxManifestPackage -Manifest $manifest -PackageId $ptPkg
-                    $installedCount++
-                } else {
-                    Write-DevboxFail "Failed to install PowerToys (Exit code: $($p.ExitCode))"
-                    $failedCount++
-                }
-            } catch {
-                Write-DevboxFail "Error installing PowerToys" $_.Exception.Message
+            $ptRes = Install-DevboxWingetPackage -PackageId $ptPkg -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+            if ($ptRes.Skipped) {
+                $skippedCount++
+            } elseif ($ptRes.Success) {
+                $installedCount++
+            } else {
                 $failedCount++
             }
         }
@@ -137,25 +127,13 @@ function Invoke-DevboxKeybindingsModule {
         if ($ahkInstalled) {
             Write-DevboxSkip "AutoHotkey" "AutoHotkey is already installed"
             $skippedCount++
-        } elseif ($DryRun) {
-            Write-DevboxDryRun "Would install $ahkPkg via winget"
-            $installedCount++
         } else {
-            Write-DevboxInfo "Installing AutoHotkey v2 via winget..."
-            try {
-                $p = Start-Process -FilePath "winget" `
-                    -ArgumentList "install", "--id", $ahkPkg, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                    -NoNewWindow -PassThru -Wait
-                if ($p.ExitCode -eq 0) {
-                    Write-DevboxOk "Installed AutoHotkey v2"
-                    Add-DevboxManifestPackage -Manifest $manifest -PackageId $ahkPkg
-                    $installedCount++
-                } else {
-                    Write-DevboxFail "Failed to install AutoHotkey (Exit code: $($p.ExitCode))"
-                    $failedCount++
-                }
-            } catch {
-                Write-DevboxFail "Error installing AutoHotkey" $_.Exception.Message
+            $ahkRes = Install-DevboxWingetPackage -PackageId $ahkPkg -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+            if ($ahkRes.Skipped) {
+                $skippedCount++
+            } elseif ($ahkRes.Success) {
+                $installedCount++
+            } else {
                 $failedCount++
             }
         }

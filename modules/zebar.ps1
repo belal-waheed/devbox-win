@@ -13,6 +13,7 @@ param(
 Set-StrictMode -Version Latest
 
 . (Join-Path $PSScriptRoot "..\core\logger.ps1")
+. (Join-Path $PSScriptRoot "..\core\state.ps1")
 . (Join-Path $PSScriptRoot "..\core\manifest.ps1")
 . (Join-Path $PSScriptRoot "..\core\symlink.ps1")
 
@@ -60,32 +61,15 @@ function Invoke-DevboxZebarModule {
             Write-DevboxSkip "Zebar" "Zebar executable already present at '$exePath'"
             $skippedCount++
         } else {
-            if ($DryRun) {
-                Write-DevboxDryRun "Would install Zebar ($pkgId) via winget"
+            $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+            $res = Install-DevboxWingetPackage -PackageId $pkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+            if ($res.Skipped) {
+                $skippedCount++
+            } elseif ($res.Success) {
                 $installedCount++
+                $exePath = Find-ZebarExecutable
             } else {
-                Write-DevboxInfo "Installing Zebar ($pkgId) via winget..."
-                try {
-                    $p = Start-Process -FilePath "winget" `
-                        -ArgumentList "install", "--id", $pkgId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                        -NoNewWindow -PassThru -Wait
-
-                    if ($p.ExitCode -eq 0) {
-                        Write-DevboxOk "Installed Zebar ($pkgId)"
-                        Add-DevboxManifestPackage -Manifest $manifest -PackageId $pkgId
-                        $installedCount++
-                        $exePath = Find-ZebarExecutable
-                    } elseif ($p.ExitCode -eq -1978335189) {
-                        Write-DevboxSkip "Zebar" "Package already installed"
-                        $skippedCount++
-                    } else {
-                        Write-DevboxFail "Failed to install Zebar (Exit code: $($p.ExitCode))"
-                        $failedCount++
-                    }
-                } catch {
-                    Write-DevboxFail "Error installing Zebar" $_.Exception.Message
-                    $failedCount++
-                }
+                $failedCount++
             }
         }
     }

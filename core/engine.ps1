@@ -8,6 +8,7 @@
 [CmdletBinding()]
 param(
     [string]$ConfigFile = "",
+    [string]$InstallLocation = "",
     [switch]$DryRun,
     [string]$Module = "",
     [switch]$Retry,
@@ -67,6 +68,7 @@ function Show-DevboxHelp {
     Write-Host "  -Retry                        Re-execute only modules that previously failed"
     Write-Host "  -Module <name>                Run only a single specific module (core or community)"
     Write-Host "  -ConfigFile <path>            Specify an alternate YAML configuration file"
+    Write-Host "  -InstallLocation <path>       Specify custom directory for winget package installations"
     Write-Host "  -Uninstall                    Revert symlinks, restore original backups, and clean devbox-win state"
     Write-Host "  -UninstallPackages            When combined with -Uninstall, also removes installed winget packages"
     Write-Host "  -Help                         Display this usage reference guide`n"
@@ -191,6 +193,18 @@ try {
 } catch {
     Write-DevboxFail "Failed to parse YAML configuration" $_.Exception.Message
     exit 1
+}
+
+if (-not [string]::IsNullOrWhiteSpace($InstallLocation)) {
+    if (-not $config.Contains("paths") -or $null -eq $config["paths"]) {
+        $config["paths"] = [ordered]@{}
+    }
+    if ($config["paths"] -is [System.Collections.IDictionary]) {
+        $config["paths"]["apps"] = $InstallLocation
+    } elseif ($config["paths"] -is [PSCustomObject]) {
+        $config["paths"] | Add-Member -NotePropertyName "apps" -NotePropertyValue $InstallLocation -Force
+    }
+    $config["install_location"] = $InstallLocation
 }
 
 $validation = Test-DevboxConfig -Config $config

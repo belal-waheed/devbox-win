@@ -101,6 +101,7 @@ $xaml = @"
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- Header -->
             <RowDefinition Height="Auto"/> <!-- Presets Bar -->
+            <RowDefinition Height="Auto"/> <!-- Custom Install Path -->
             <RowDefinition Height="*"/>    <!-- Tab Content -->
             <RowDefinition Height="Auto"/> <!-- Action Footer -->
         </Grid.RowDefinitions>
@@ -158,9 +159,25 @@ $xaml = @"
         </Border>
 
         <!-- ============================================================== -->
+        <!-- CUSTOM INSTALLATION PATH BAR -->
+        <!-- ============================================================== -->
+        <Border Grid.Row="2" Background="#181825" BorderBrush="#313244" BorderThickness="0,0,0,1" Padding="20,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Custom Install Path:" FontSize="12" FontWeight="Bold" Foreground="#a6adc8" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBox x:Name="txtCustomPath" Grid.Column="1" Background="#1e1e2e" Foreground="#cdd6f4" BorderBrush="#313244" BorderThickness="1" Padding="8,4" VerticalAlignment="Center" FontSize="12"/>
+                <Button x:Name="btnBrowsePath" Grid.Column="2" Content="Browse..." Background="#252538" Foreground="#cba6f7" BorderBrush="#313244" BorderThickness="1" Padding="12,4" Margin="8,0,0,0" VerticalAlignment="Center" Cursor="Hand"/>
+            </Grid>
+        </Border>
+
+        <!-- ============================================================== -->
         <!-- TABBED CONTENT -->
         <!-- ============================================================== -->
-        <TabControl Grid.Row="2" Background="#1e1e2e" BorderThickness="0" Margin="16,12,16,12">
+        <TabControl Grid.Row="3" Background="#1e1e2e" BorderThickness="0" Margin="16,12,16,12">
             <!-- TAB 1: EDITORS & CORE TOOLCHAIN -->
             <TabItem Header="Editors &amp; CLI Tools">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
@@ -378,7 +395,7 @@ $xaml = @"
         <!-- ============================================================== -->
         <!-- ACTION FOOTER -->
         <!-- ============================================================== -->
-        <Border Grid.Row="3" Background="#1e1e2e" BorderBrush="#313244" BorderThickness="0,1,0,0" Padding="20,14">
+        <Border Grid.Row="4" Background="#1e1e2e" BorderBrush="#313244" BorderThickness="0,1,0,0" Padding="20,14">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -446,6 +463,8 @@ $chk_obs = $window.FindName("chk_obs")
 $chk_discord = $window.FindName("chk_discord")
 
 $txtStatusSummary = $window.FindName("txtStatusSummary")
+$txtCustomPath = $window.FindName("txtCustomPath")
+$btnBrowsePath = $window.FindName("btnBrowsePath")
 
 # All package checkboxes mapped to winget IDs
 $allCheckboxes = @(
@@ -590,6 +609,20 @@ function Apply-PresetState([string]$PresetName) {
 ($window.FindName("btnSelectAll")).Add_Click({ Apply-PresetState "selectall" })
 ($window.FindName("btnClearAll")).Add_Click({ Apply-PresetState "clearall" })
 
+# Attach Browse Custom Path Handler
+if ($btnBrowsePath) {
+    $btnBrowsePath.Add_Click({
+        $dialog = [System.Windows.Forms.FolderBrowserDialog]::new()
+        $dialog.Description = "Select custom application installation directory"
+        $dialog.UseDescriptionForTitle = $true
+        if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            if ($txtCustomPath) {
+                $txtCustomPath.Text = $dialog.SelectedPath
+            }
+        }
+    })
+}
+
 # Compilation Function: Converts Checked State into devbox-win Config Hashtable
 function Get-CompiledConfigFromUI {
     $packages = [System.Collections.Generic.List[string]]::new()
@@ -690,6 +723,14 @@ function Get-CompiledConfigFromUI {
             autostart          = [bool]$chk_zebar.IsChecked
             pack               = if ($chk_nord_pack.IsChecked) { "nord" } else { "starter" }
         }
+    }
+
+    if ($txtCustomPath -and -not [string]::IsNullOrWhiteSpace($txtCustomPath.Text)) {
+        $customLoc = $txtCustomPath.Text.Trim()
+        $config["paths"] = [ordered]@{
+            apps = $customLoc
+        }
+        $config["install_location"] = $customLoc
     }
 
     return $config

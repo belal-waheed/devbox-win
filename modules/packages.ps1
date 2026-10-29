@@ -71,56 +71,18 @@ function Invoke-DevboxPackagesModule {
     # Pre-populate installed set via session-wide cache for instant batch lookup
     $installedSet = Get-DevboxInstalledPackageSet
 
+    $installLoc = if ($Config.paths -and $Config.paths.apps) { $Config.paths.apps } elseif ($Config.install_location) { $Config.install_location } else { "" }
+
     foreach ($pkg in $packages) {
         if (-not $pkg) { continue }
         $pkgId = $pkg.ToString().Trim()
 
-        $isInstalled = Test-WingetPackageInstalled -PackageId $pkgId
-
-        if ($isInstalled) {
-            Write-DevboxSkip $pkgId "Already installed"
+        $result = Install-DevboxWingetPackage -PackageId $pkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+        if ($result.Skipped) {
             $skippedCount++
-            continue
-        }
-
-        if ($DryRun) {
-            Write-DevboxDryRun "Would install: $pkgId"
+        } elseif ($result.Success) {
             $installedCount++
-            continue
-        }
-
-        Write-DevboxInfo "Installing $pkgId via winget..."
-        try {
-            $process = Start-Process -FilePath "winget" `
-                -ArgumentList "install", "--id", $pkgId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements" `
-                -NoNewWindow -PassThru
-
-            $exited = $process.WaitForExit(180000)
-            if (-not $exited) {
-                Write-DevboxWarn "Installation of $pkgId timed out after 180 seconds. Terminating process..."
-                try {
-                    $process.Kill($true)
-                } catch {
-                    # Process might have exited between check and kill
-                }
-                Write-DevboxFail "Package $pkgId installation timed out (circuit breaker triggered)"
-                $failedCount++
-                continue
-            }
-
-            if ($process.ExitCode -eq 0) {
-                Write-DevboxOk "Installed: $pkgId"
-                Add-DevboxManifestPackage -Manifest $manifest -PackageId $pkgId
-                $installedCount++
-            } elseif ($process.ExitCode -eq -1978335189) {
-                Write-DevboxSkip $pkgId "Already installed"
-                $skippedCount++
-            } else {
-                Write-DevboxFail "Failed to install: $pkgId (Exit code: $($process.ExitCode))"
-                $failedCount++
-            }
-        } catch {
-            Write-DevboxFail "Error installing $pkgId" $_.Exception.Message
+        } else {
             $failedCount++
         }
     }

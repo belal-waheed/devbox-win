@@ -264,6 +264,20 @@ function Read-DevboxConfigFile {
         $parsed = ConvertFrom-SimpleYaml -YamlText $rawContent
     }
 
+    if ($parsed -is [System.Collections.IDictionary]) {
+        if ($parsed.Contains("paths") -and ($null -ne $parsed["paths"]) -and ($parsed["paths"] -is [System.Collections.IDictionary]) -and $parsed["paths"].Contains("apps") -and $parsed["paths"]["apps"]) {
+            if (-not $parsed.Contains("install_location") -or -not $parsed["install_location"]) {
+                $parsed["install_location"] = $parsed["paths"]["apps"]
+            }
+        } elseif ($parsed.Contains("install_location") -and $parsed["install_location"]) {
+            if (-not $parsed.Contains("paths") -or ($null -eq $parsed["paths"])) {
+                $parsed["paths"] = [ordered]@{ apps = $parsed["install_location"] }
+            } elseif (($parsed["paths"] -is [System.Collections.IDictionary]) -and -not $parsed["paths"].Contains("apps")) {
+                $parsed["paths"]["apps"] = $parsed["install_location"]
+            }
+        }
+    }
+
     if ($SkipPresetResolution) {
         return $parsed
     }
@@ -343,6 +357,22 @@ function Export-DevboxConfigToYamlFile {
     [void]$sb.AppendLine("")
     [void]$sb.AppendLine("preset: $($Config.preset)")
     [void]$sb.AppendLine("")
+
+    if ($Config.Contains("paths") -and ($null -ne $Config.paths) -and $Config.paths.Contains("apps") -and $Config.paths.apps) {
+        [void]$sb.AppendLine("paths:")
+        [void]$sb.AppendLine("  apps: `"$($Config.paths.apps)`"")
+        [void]$sb.AppendLine("")
+    } elseif ($Config.Contains("install_location") -and $Config.install_location) {
+        [void]$sb.AppendLine("paths:")
+        [void]$sb.AppendLine("  apps: `"$($Config.install_location)`"")
+        [void]$sb.AppendLine("")
+    }
+
+    if ($Config.Contains("install_location") -and $Config.install_location) {
+        [void]$sb.AppendLine("install_location: `"$($Config.install_location)`"")
+        [void]$sb.AppendLine("")
+    }
+
     [void]$sb.AppendLine("modules:")
     foreach ($m in $Config.modules.Keys) {
         [void]$sb.AppendLine("  ${m}: $(if ($Config.modules[$m]) { 'true' } else { 'false' })")

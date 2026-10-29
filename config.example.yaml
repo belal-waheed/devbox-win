@@ -15,6 +15,12 @@ user:
 # Presets supply curated base defaults that your explicit entries below override.
 preset: fullstack
 
+# Custom Installation Locations
+# Configure target installation root for winget packages that support custom directories.
+# If an installer does not support custom paths, devbox-win automatically falls back to default.
+paths:
+  apps: "D:\\DevTools"    # Custom location for portable/application binaries (passed to winget --location)
+
 # Modules to execute (set to true/false to enable or disable)
 modules:
   packages: true      # Winget packages
