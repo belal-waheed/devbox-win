@@ -223,6 +223,14 @@ Assert-True ($null -ne $netCheck) "Doctor validates network connectivity to GitH
 $symCheck = $doctorObj.Checks | Where-Object { $_.Name -eq "Symlink Integrity" }
 Assert-True ($null -ne $symCheck) "Doctor audits symlink integrity from manifest"
 
+# Audit resilience on pristine machines / CI runners without registered symlinks
+function Load-DevboxManifest { return New-DevboxManifestTemplate }
+$doctorClean = Invoke-DevboxDoctor -AsObject -Quiet
+$cleanSymCheck = $doctorClean.Checks | Where-Object { $_.Name -eq "Symlink Integrity" }
+Assert-True ($null -ne $cleanSymCheck) "Doctor safely audits empty symlinks manifest without PropertyNotFoundException"
+Assert-True ($cleanSymCheck.Status -eq "INFO") "Doctor marks empty symlinks as INFO on pristine environments"
+. (Join-Path $projectRoot "core\manifest.ps1")
+
 # Test 9: Workstation State Exporter
 Write-DevboxSection "Test: Workstation State Exporter"
 . (Join-Path $projectRoot "core\export.ps1")

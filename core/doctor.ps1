@@ -206,12 +206,13 @@ function Invoke-DevboxDoctor {
     # 8. Symlink Integrity & Manifest Audit
     # --------------------------------------------------------------------------
     $manifest = Load-DevboxManifest
-    $symlinks = if ($manifest.Contains("symlinks") -and ($null -ne $manifest["symlinks"])) { @($manifest["symlinks"]) } else { @() }
+    $rawLinks = if ($manifest.Contains("symlinks") -and ($null -ne $manifest["symlinks"])) { $manifest["symlinks"] } else { @() }
+    $symlinks = @($rawLinks)
 
     $brokenLinks = [System.Collections.Generic.List[object]]::new()
     $healthyCount = 0
 
-    if ($symlinks.Count -gt 0) {
+    if (@($symlinks).Count -gt 0) {
         foreach ($link in $symlinks) {
             $dst = $link.destination
             $src = $link.source
