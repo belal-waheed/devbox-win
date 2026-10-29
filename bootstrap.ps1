@@ -36,6 +36,9 @@ param(
     [switch]$ListModules,
     [switch]$Dashboard,
     [switch]$NoLaunch,
+    [switch]$Gui,
+    [switch]$NonInteractive,
+    [switch]$Silent,
     [switch]$SkipDevMode,
     [switch]$Help
 )
@@ -218,7 +221,7 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "core\engine.ps1"))) 
     }
 }
 
-# 6. Launch Core Engine
+# 6. Launch Core Engine or GUI
 $engineScript = Join-Path $workDir "core\engine.ps1"
 if (-not (Test-Path $engineScript)) {
     Write-BootFail "Core engine not found at: $engineScript"
@@ -251,6 +254,46 @@ if ($ListModules) { $engineParams["ListModules"] = $true }
 if ($Dashboard)  { $engineParams["Dashboard"] = $true }
 if ($NoLaunch)   { $engineParams["NoLaunch"] = $true }
 if ($Help)       { $engineParams["Help"] = $true }
+
+# Interactive Desktop Mode (CTT winutil style):
+# When executed without batch parameters in an interactive console, default to GUI utility.
+$canLaunchGui = $false
+try {
+    if ([Environment]::UserInteractive -and (-not [Console]::IsInputRedirected) -and (-not [Console]::IsOutputRedirected)) {
+        $canLaunchGui = $true
+    }
+} catch { }
+
+$guiScript = Join-Path $workDir "core\gui.ps1"
+if ($canLaunchGui -and (Test-Path $guiScript) -and (($engineParams.Count -eq 0) -or $Gui) -and (-not $NonInteractive) -and (-not $Silent)) {
+    Write-BootInfo "Launching devbox-win Windows Developer Utility (GUI)..."
+    $guiResult = & $guiScript -RepoRoot $workDir
+    if ($null -ne $guiResult -and $guiResult.Action -ne "Cancel") {
+        if ($guiResult.Action -eq "Doctor") {
+            & $engineScript -Doctor
+            exit $LASTEXITCODE
+        }
+        if ($guiResult.Action -eq "Backup") {
+            & $engineScript -Backup
+            exit $LASTEXITCODE
+        }
+        if ($guiResult.Action -eq "Export") {
+            & $engineScript -Export
+            exit $LASTEXITCODE
+        }
+        if ($guiResult.Action -in @("Install", "DryRun")) {
+            $userConfigYaml = Join-Path $workDir "config.yaml"
+            Export-GuiConfigToYamlFile -Config $guiResult.Config -Path $userConfigYaml
+            $isDry = ($guiResult.DryRun -or $DryRun)
+            Write-BootInfo "Applying configuration from GUI selection..."
+            & $engineScript -ConfigFile $userConfigYaml -DryRun:$isDry
+            exit $LASTEXITCODE
+        }
+    } else {
+        Write-BootInfo "Devbox Windows Utility closed by user."
+        exit 0
+    }
+}
 
 Write-BootInfo "Transferring execution to core engine..."
 & $engineScript @engineParams

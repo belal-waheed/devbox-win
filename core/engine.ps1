@@ -31,6 +31,7 @@ param(
     [switch]$ListModules,
     [switch]$Dashboard,
     [switch]$NoLaunch,
+    [switch]$Gui,
     [switch]$Help
 )
 
@@ -120,6 +121,31 @@ if ($Export) {
     $targetOut = if ($ExportPath) { $ExportPath } else { Join-Path $repoRoot "config.exported.yaml" }
     & (Join-Path $PSScriptRoot "export.ps1") -OutputPath $targetOut
     exit $LASTEXITCODE
+}
+
+# Handle GUI Utility Request (CTT winutil style)
+if ($Gui) {
+    $guiScript = Join-Path $PSScriptRoot "gui.ps1"
+    if (Test-Path $guiScript) {
+        $guiRes = & $guiScript -RepoRoot $repoRoot -DryRun:$DryRun
+        if ($null -ne $guiRes -and $guiRes.Action -in @("Install", "DryRun")) {
+            $userConfigYaml = Join-Path $repoRoot "config.yaml"
+            Export-GuiConfigToYamlFile -Config $guiRes.Config -Path $userConfigYaml
+            $ConfigFile = $userConfigYaml
+            if ($guiRes.DryRun) { $DryRun = $true }
+        } elseif ($guiRes.Action -eq "Doctor") {
+            & (Join-Path $PSScriptRoot "doctor.ps1")
+            exit $LASTEXITCODE
+        } elseif ($guiRes.Action -eq "Backup") {
+            & (Join-Path $PSScriptRoot "backup.ps1") -Backup
+            exit $LASTEXITCODE
+        } elseif ($guiRes.Action -eq "Export") {
+            & (Join-Path $PSScriptRoot "export.ps1")
+            exit $LASTEXITCODE
+        } else {
+            exit 0
+        }
+    }
 }
 
 # Handle Interactive Wizard Request

@@ -371,7 +371,35 @@ Assert-True ($null -ne $pkgSet) "Package cache initializes successfully"
 $testFastPkg = Test-DevboxPackageInstalledFast -PackageId "NonExistentPackage_99999"
 Assert-True ($testFastPkg -eq $false) "Fast package test handles missing packages gracefully"
 
-# Test 16: AST Syntax Check on all ps1 files
+# Test 16: Windows Developer Utility GUI (WPF XAML)
+Write-DevboxSection "Test: Windows Developer Utility GUI (WPF)"
+$guiPath = Join-Path $projectRoot "core\gui.ps1"
+Assert-True (Test-Path $guiPath) "core/gui.ps1 exists on disk"
+
+$dummyConfig = [ordered]@{
+    user = [ordered]@{ name = "TestUser"; email = "test@domain.com"; github_username = "testgit" }
+    preset = "belal-catppuccin"
+    modules = [ordered]@{ packages = $true; fonts = $true; git = $true; shell = $true; editor = $true; runtimes = $true; databases = $true; envvars = $true; keybindings = $true; glazewm = $true; zebar = $true; dotfiles = $true }
+    packages = @("Zed.Zed", "Git.Git")
+    databases = @("PostgreSQL.PostgreSQL")
+    community_modules = @("ai-tools")
+    editor = [ordered]@{ primary = "zed"; sync_settings = $true; install_extensions = $true }
+    git = [ordered]@{ default_branch = "main"; autocrlf = "input"; generate_ssh_key = $true; ssh_key_type = "ed25519" }
+    runtimes = [ordered]@{ node = $true; python = $true; rust = $false; dotnet = $false }
+    glazewm = [ordered]@{ install = $true; autostart = $true; hide_method = "cloak"; border_color = "#cba6f7" }
+    zebar = [ordered]@{ install = $true; autostart = $true; pack = "nord" }
+}
+
+$tmpGuiYaml = Join-Path $env:TEMP "test_gui_export_$([System.Guid]::NewGuid().ToString('N').Substring(0,8)).yaml"
+Export-GuiConfigToYamlFile -Config $dummyConfig -Path $tmpGuiYaml
+Assert-True (Test-Path $tmpGuiYaml) "GUI exported YAML exists on disk"
+$parsedGuiYaml = Read-DevboxConfigFile -Path $tmpGuiYaml -SkipPresetResolution
+Assert-True ($parsedGuiYaml.user.name -eq "TestUser") "GUI exported YAML parses user.name"
+Assert-True ($parsedGuiYaml.preset -eq "belal-catppuccin") "GUI exported YAML parses preset"
+Assert-True ($parsedGuiYaml.packages.Count -eq 2) "GUI exported YAML parses packages count"
+Remove-Item -Path $tmpGuiYaml -Force -ErrorAction SilentlyContinue
+
+# Test 17: AST Syntax Check on all ps1 files
 Write-DevboxSection "Test: PowerShell AST Syntax Validation"
 $allScripts = Get-ChildItem -Path $projectRoot -Filter "*.ps1" -Recurse
 foreach ($s in $allScripts) {

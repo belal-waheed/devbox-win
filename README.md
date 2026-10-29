@@ -47,7 +47,7 @@
 
 ## Quickstart
 
-### Remote One-Liner
+### Remote One-Liner (Launches Windows Utility GUI)
 Open Windows Terminal or PowerShell and run:
 
 ```powershell
@@ -56,23 +56,21 @@ Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main
 
 *(Or via short alias: `irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex`)*
 
-### Local Execution
-Clone your fork locally and run:
+> **Interactive Desktop Experience:** Just like Chris Titus Tech's `winutil`, running the one-liner in an interactive desktop session launches the native **devbox-win Windows Developer Utility GUI** with categorized package checklists, preset switchers, and dry-run simulation.
 
+### Local Execution & Operation Modes
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File bootstrap.ps1
-```
+# Launch the native Windows Utility GUI (WPF)
+pwsh -NoProfile -ExecutionPolicy Bypass -File bootstrap.ps1 -Gui
 
-To run the interactive first-time setup wizard:
+# Run the keyboard-driven terminal ANSI wizard
+pwsh -NoProfile -ExecutionPolicy Bypass -File bootstrap.ps1 -Wizard
 
-```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File core/wizard.ps1
-```
-
-To perform a safe simulation without applying any changes:
-
-```powershell
+# Perform a safe headless simulation without disk changes
 pwsh -NoProfile -ExecutionPolicy Bypass -File bootstrap.ps1 -DryRun
+
+# Headless unattended installation according to config.yaml
+pwsh -NoProfile -ExecutionPolicy Bypass -File bootstrap.ps1 -NonInteractive
 ```
 
 ---
