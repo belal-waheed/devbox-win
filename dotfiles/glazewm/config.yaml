@@ -163,6 +163,10 @@ window_rules:
           { regex: "(?i)brave|chrome|msedge|firefox|zen|vivaldi|arc|opera" }
         window_title: { regex: "(?i)^picture[- ]in[- ]picture$" }
 
+      # TickTick Mini Focus / Pomodoro floating timer (PiP overlay)
+      - window_process: { regex: "(?i)TickTick" }
+        window_title: { regex: "(?i)PomoTimer|Mini Focus" }
+
       # GPU overlays
       - window_process:
           {
