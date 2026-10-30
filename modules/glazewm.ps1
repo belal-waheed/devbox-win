@@ -99,6 +99,33 @@ function Invoke-DevboxGlazewmModule {
         }
     }
 
+    # 2b. Helper Scripts Verification (Restart-Zebar.vbs, Launch-GPU.vbs, Update-GPU.ps1)
+    $glzrDir = Join-Path $HOME ".glzr"
+    if (-not (Test-Path $glzrDir) -and -not $DryRun) {
+        New-Item -ItemType Directory -Path $glzrDir -Force | Out-Null
+    }
+    $helperScripts = @("Restart-Zebar.vbs", "Launch-GPU.vbs", "Update-GPU.ps1")
+    foreach ($script in $helperScripts) {
+        $src = Join-Path $repoRoot "dotfiles\glazewm\$script"
+        $dst = Join-Path $glzrDir $script
+        if (Test-Path $src) {
+            if ($DryRun) {
+                Write-DevboxDryRun "Would link GlazeWM helper script: $src -> $dst"
+                $installedCount++
+            } else {
+                $symRes = New-DevboxSymlink -Source $src -Destination $dst
+                if ($symRes.Status -eq "OK") {
+                    Write-DevboxOk "Configured GlazeWM helper script: $dst"
+                    Add-DevboxManifestSymlink -Manifest $manifest -Destination $dst -Source $src -BackupPath $symRes.BackupPath
+                    $installedCount++
+                } else {
+                    Write-DevboxSkip "GlazeWM Helper ($script)" $symRes.Message
+                    $skippedCount++
+                }
+            }
+        }
+    }
+
     # 3. Startup Shortcut
     if ($autostart) {
         $wsh = New-Object -ComObject WScript.Shell
