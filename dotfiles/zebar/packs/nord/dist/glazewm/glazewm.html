@@ -41,9 +41,36 @@
         padding: 0 10px !important;
       }
 
-      /* --- Icon Overhaul: Eliminate generic SVGs --- */
-      svg.lucide, .lucide-icon, svg.lucide-app-window, svg.lucide-cpu, svg.lucide-memory-stick, svg.lucide-clock {
+      /* --- Icon Overhaul: Hide redundant telemetry/window SVGs while keeping media controls visible --- */
+      svg.lucide-app-window, svg.lucide-cpu, svg.lucide-memory-stick, svg.lucide-clock {
         display: none !important;
+      }
+
+      /* Explicitly ensure media controls are visible */
+      svg.lucide-music, svg.lucide-skip-back, svg.lucide-play, svg.lucide-pause, svg.lucide-skip-forward {
+        display: inline-block !important;
+        stroke: currentColor !important;
+      }
+
+      /* Media Player Controls */
+      button[title="Previous Track"],
+      button[title="Next Track"],
+      button[title="Play"],
+      button[title="Pause"] {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        color: #f4f4f5 !important;
+      }
+      button[title="Previous Track"] svg,
+      button[title="Next Track"] svg,
+      button[title="Play"] svg,
+      button[title="Pause"] svg {
+        display: inline-block !important;
+        width: 14px !important;
+        height: 14px !important;
+        stroke: #f4f4f5 !important;
       }
 
       /* --- Workspaces --- */
