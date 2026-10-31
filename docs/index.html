@@ -410,12 +410,65 @@
       border-radius: var(--radius-md);
       padding: 16px 20px;
       max-width: 760px;
-      margin: 0 auto 24px;
+      margin: 0 auto 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
       box-shadow: var(--shadow-md), var(--shadow-purple);
+      cursor: pointer;
+    }
+
+    .hero-alt-command {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .hero-alt-label {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .hero-alt-code {
+      background: var(--bg-surface-elevated);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      transition: all 0.15s ease;
+      user-select: all;
+    }
+
+    .hero-alt-code:hover {
+      border-color: var(--border-accent);
+      color: var(--text-primary);
+      background: var(--bg-surface-hover);
+    }
+
+    .btn.copied {
+      background: var(--accent-green) !important;
+      color: #ffffff !important;
+      border-color: var(--accent-green) !important;
+    }
+
+    .btn.hint {
+      background: var(--accent-yellow) !important;
+      color: #0a0d12 !important;
+      border-color: var(--accent-yellow) !important;
+      font-size: 0.76rem !important;
+      white-space: normal !important;
+      max-width: 320px;
+      text-align: center;
     }
 
     .hero-command-text {
@@ -1137,15 +1190,20 @@
           </p>
 
           <!-- Interactive One-Liner Box -->
-          <div class="hero-command-card">
+          <div class="hero-command-card" onclick="copyCmd('main-bootstrap-cmd', this.querySelector('.btn-copy-main'))" title="Click to copy or select command">
             <div class="hero-command-text">
               <span class="prompt-symbol">PS &gt;</span>
               <span id="main-bootstrap-cmd">Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | Invoke-Expression</span>
             </div>
-            <button class="btn btn-primary" onclick="copyCmd('main-bootstrap-cmd', this)">
+            <button class="btn btn-primary btn-copy-main" onclick="event.stopPropagation(); copyCmd('main-bootstrap-cmd', this)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
               <span>Copy One-Liner</span>
             </button>
+          </div>
+
+          <div class="hero-alt-command">
+            <span class="hero-alt-label">Alternative (Clone &amp; Run):</span>
+            <code class="hero-alt-code" id="alt-clone-cmd" onclick="copyCmd('alt-clone-cmd', this)" title="Click to copy or select">git clone https://github.com/belal-waheed/devbox-win.git; cd devbox-win; ./bootstrap.ps1</code>
           </div>
 
           <div class="hero-badges-row">
@@ -1407,9 +1465,9 @@
               <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">
                 Your Customized Bootstrap Command:
               </div>
-              <div class="custom-command-box">
+              <div class="custom-command-box" onclick="copyCmd('custom-bootstrap-cmd', this.querySelector('button'))" style="cursor: pointer;" title="Click to copy or select">
                 <span id="custom-bootstrap-cmd">Invoke-RestMethod https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | Invoke-Expression -Preset belal-catppuccin</span>
-                <button class="btn btn-primary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="copyCmd('custom-bootstrap-cmd', this)">
+                <button class="btn btn-primary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="event.stopPropagation(); copyCmd('custom-bootstrap-cmd', this)">
                   Copy
                 </button>
               </div>
@@ -1680,43 +1738,57 @@ function Get-DevboxModuleMetadata {
 
     // Copy Utility with Graceful Fallback (bypasses ClickFix false positives)
     function copyCmd(id, btnElement) {
-      const text = document.getElementById(id)?.innerText || id;
+      const el = document.getElementById(id);
+      const text = el ? (el.innerText || el.textContent).trim() : id;
 
-      const setCopiedUI = () => {
-        const originalText = btnElement.innerHTML;
+      // 1. Automatically select the text so native keyboard copy (Ctrl+C) works instantly
+      if (el) {
+        try {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (_) {}
+      }
+
+      const showFeedback = (msg, isHint) => {
+        if (!btnElement) return;
+        const originalHTML = btnElement.getAttribute('data-orig-html') || btnElement.innerHTML;
+        if (!btnElement.getAttribute('data-orig-html')) {
+          btnElement.setAttribute('data-orig-html', originalHTML);
+        }
         btnElement.classList.add('copied');
-        btnElement.innerText = 'Copied!';
+        if (isHint) {
+          btnElement.classList.add('hint');
+        }
+        btnElement.innerText = msg;
         setTimeout(() => {
-          btnElement.classList.remove('copied');
-          btnElement.innerHTML = originalText;
-        }, 2000);
+          btnElement.classList.remove('copied', 'hint');
+          btnElement.innerHTML = originalHTML;
+        }, isHint ? 3500 : 2000);
       };
 
+      // 2. Try copying via navigator.clipboard.writeText inside try/catch
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(setCopiedUI).catch(() => {
-          fallbackClipboardCopy(text, setCopiedUI);
+        navigator.clipboard.writeText(text).then(() => {
+          showFeedback('Copied!', false);
+        }).catch(() => {
+          // Intercepted or blocked by adblocker (e.g. uBlock Origin ClickFix prevention)
+          showFeedback('Selected! Press Ctrl+C to copy (avoids adblocker false-positive)', true);
         });
       } else {
-        fallbackClipboardCopy(text, setCopiedUI);
+        try {
+          const ok = document.execCommand('copy');
+          if (ok) {
+            showFeedback('Copied!', false);
+          } else {
+            showFeedback('Selected! Press Ctrl+C to copy (avoids adblocker false-positive)', true);
+          }
+        } catch (_) {
+          showFeedback('Selected! Press Ctrl+C to copy (avoids adblocker false-positive)', true);
+        }
       }
-    }
-
-    function fallbackClipboardCopy(text, onSuccess) {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.top = '-9999px';
-      textArea.style.opacity = '0';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        onSuccess();
-      } catch (e) {
-        window.prompt('Copy command manually:', text);
-      }
-      document.body.removeChild(textArea);
     }
 
     // Configurator State

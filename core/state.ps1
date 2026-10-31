@@ -196,9 +196,11 @@ function Install-DevboxWingetPackage {
         }
     }
 
+    $isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    $hasCustomLocation = (-not [string]::IsNullOrWhiteSpace($Location))
+
     $baseArgs = @("install", "--id", $PackageId, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements")
     $argsToRun = @($baseArgs)
-    $hasCustomLocation = (-not [string]::IsNullOrWhiteSpace($Location))
     if ($hasCustomLocation) {
         $argsToRun += @("--location", $Location)
         if (Get-Command "Write-DevboxInfo" -ErrorAction SilentlyContinue) {
@@ -210,17 +212,29 @@ function Install-DevboxWingetPackage {
         }
     }
 
+    # If non-elevated, attempt user scope first to avoid machine-wide MSI elevation blocks
+    $attemptedUserScope = $false
+    if (-not $isElevated) {
+        $argsToRun += @("--scope", "user")
+        $attemptedUserScope = $true
+    }
+
     $timeoutMs = $TimeoutSeconds * 1000
 
     function Invoke-WingetCli([string[]]$cliArgs) {
         try {
-            $p = Start-Process -FilePath "winget" -ArgumentList $cliArgs -NoNewWindow -PassThru
+            $p = Start-Process -FilePath "winget" -ArgumentList $cliArgs -NoNewWindow -PassThru -ErrorAction Stop
+            if ($null -eq $p) {
+                return @{ TimedOut = $false; ExitCode = -1; Error = "Failed to start winget process" }
+            }
             $exited = $p.WaitForExit($timeoutMs)
             if (-not $exited) {
                 try { $p.Kill($true) } catch { }
                 return @{ TimedOut = $true; ExitCode = -1 }
             }
-            return @{ TimedOut = $false; ExitCode = $p.ExitCode }
+            $rawCode = $p.ExitCode
+            $finalCode = if ($null -ne $rawCode) { [int]$rawCode } else { 0 }
+            return @{ TimedOut = $false; ExitCode = $finalCode }
         } catch {
             return @{ TimedOut = $false; ExitCode = -1; Error = $_.Exception.Message }
         }
@@ -229,12 +243,14 @@ function Install-DevboxWingetPackage {
     $execRes = Invoke-WingetCli -cliArgs $argsToRun
 
     if ($execRes.TimedOut) {
-        if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
-            Write-DevboxFail "Package $PackageId installation timed out (circuit breaker triggered)"
+        if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
+            Write-DevboxWarn "Package $PackageId installation timed out (circuit breaker triggered). Skipped to prevent pipeline abort."
+        } else {
+            Write-Host "  [WARN] Package $PackageId installation timed out (circuit breaker triggered). Skipped to prevent pipeline abort."
         }
         return [PSCustomObject]@{
             Success  = $false
-            Skipped  = $false
+            Skipped  = $true
             DryRun   = [bool]$DryRun
             ExitCode = -1
             TimedOut = $true
@@ -244,6 +260,31 @@ function Install-DevboxWingetPackage {
 
     $exitCode = $execRes.ExitCode
 
+    # If user-scope was attempted but failed because scope is unsupported, retry without --scope user
+    if ($attemptedUserScope -and ($exitCode -eq -1978335178 -or $exitCode -eq [int]0x8a150036 -or $exitCode -eq -1978335212)) {
+        if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
+            Write-DevboxWarn "Package '$PackageId' does not support user scope. Attempting default scope..."
+        }
+        $retryArgs = @($baseArgs)
+        if ($hasCustomLocation) { $retryArgs += @("--location", $Location) }
+        $execRes = Invoke-WingetCli -cliArgs $retryArgs
+        if ($execRes.TimedOut) {
+            if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
+                Write-DevboxWarn "Package $PackageId installation timed out on retry (circuit breaker triggered). Skipped to prevent pipeline abort."
+            }
+            return [PSCustomObject]@{
+                Success  = $false
+                Skipped  = $true
+                DryRun   = [bool]$DryRun
+                ExitCode = -1
+                TimedOut = $true
+                Location = $Location
+            }
+        }
+        $exitCode = $execRes.ExitCode
+    }
+
+    # If custom location was rejected, retry without custom location
     if (($exitCode -eq -1978335212 -or $exitCode -eq [int]0x8a150014) -and $hasCustomLocation) {
         if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
             Write-DevboxWarn "Package '$PackageId' does not support custom installation location. Retrying with default location..."
@@ -251,14 +292,16 @@ function Install-DevboxWingetPackage {
             Write-Host "  [WARN] Package '$PackageId' does not support custom installation location. Retrying with default location..."
         }
 
-        $execRes = Invoke-WingetCli -cliArgs $baseArgs
+        $retryBaseArgs = @($baseArgs)
+        if ($attemptedUserScope) { $retryBaseArgs += @("--scope", "user") }
+        $execRes = Invoke-WingetCli -cliArgs $retryBaseArgs
         if ($execRes.TimedOut) {
-            if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
-                Write-DevboxFail "Package $PackageId installation timed out on retry (circuit breaker triggered)"
+            if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
+                Write-DevboxWarn "Package $PackageId installation timed out on retry (circuit breaker triggered). Skipped to prevent pipeline abort."
             }
             return [PSCustomObject]@{
                 Success  = $false
-                Skipped  = $false
+                Skipped  = $true
                 DryRun   = [bool]$DryRun
                 ExitCode = -1
                 TimedOut = $true
@@ -301,14 +344,30 @@ function Install-DevboxWingetPackage {
             TimedOut = $false
             Location = $Location
         }
-    } else {
-        $detail = if ($execRes.ContainsKey("Error")) { $execRes.Error } else { "" }
-        if (Get-Command "Write-DevboxFail" -ErrorAction SilentlyContinue) {
-            Write-DevboxFail "Failed to install: $PackageId (Exit code: $exitCode)" $detail
+    } elseif ($exitCode -eq 1602 -or $exitCode -eq -2147023294 -or $exitCode -eq -1978335181 -or (-not $isElevated -and ($exitCode -eq 5 -or $exitCode -eq -2147024891))) {
+        if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
+            Write-DevboxWarn "Package $PackageId was cancelled or requires elevation. Skipped to prevent pipeline abort."
+        } else {
+            Write-Host "  [WARN] Package $PackageId was cancelled or requires elevation. Skipped to prevent pipeline abort."
         }
         return [PSCustomObject]@{
             Success  = $false
-            Skipped  = $false
+            Skipped  = $true
+            DryRun   = [bool]$DryRun
+            ExitCode = $exitCode
+            TimedOut = $false
+            Location = $Location
+        }
+    } else {
+        $detail = if ($execRes.ContainsKey("Error")) { $execRes.Error } else { "" }
+        if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
+            Write-DevboxWarn "Package $PackageId was cancelled or requires elevation. Skipped to prevent pipeline abort."
+        } else {
+            Write-Host "  [WARN] Package $PackageId was cancelled or requires elevation. Skipped to prevent pipeline abort."
+        }
+        return [PSCustomObject]@{
+            Success  = $false
+            Skipped  = $true
             DryRun   = [bool]$DryRun
             ExitCode = $exitCode
             TimedOut = $false

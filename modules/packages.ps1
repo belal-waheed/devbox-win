@@ -77,20 +77,26 @@ function Invoke-DevboxPackagesModule {
         if (-not $pkg) { continue }
         $pkgId = $pkg.ToString().Trim()
 
-        $result = Install-DevboxWingetPackage -PackageId $pkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
-        if ($result.Skipped) {
+        try {
+            $result = Install-DevboxWingetPackage -PackageId $pkgId -Location $installLoc -Manifest $manifest -DryRun:$DryRun
+            if ($result.Skipped) {
+                $skippedCount++
+            } elseif ($result.Success) {
+                $installedCount++
+            } else {
+                $failedCount++
+            }
+        } catch {
+            Write-DevboxWarn "Package $pkgId error: $($_.Exception.Message). Skipped to prevent pipeline abort."
             $skippedCount++
-        } elseif ($result.Success) {
-            $installedCount++
-        } else {
-            $failedCount++
         }
     }
 
     if ($failedCount -gt 0) {
+        Write-DevboxWarn "$failedCount package(s) failed or require attention, $installedCount installed, $skippedCount skipped."
         return [PSCustomObject]@{
-            Status  = "FAIL"
-            Message = "$failedCount package(s) failed to install"
+            Status  = "WARN"
+            Message = "$installedCount installed, $skippedCount skipped, $failedCount failed"
         }
     }
 

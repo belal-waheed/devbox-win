@@ -47,12 +47,28 @@
       }
 
       /* Explicitly ensure media controls are visible */
-      svg.lucide-music, svg.lucide-skip-back, svg.lucide-play, svg.lucide-pause, svg.lucide-skip-forward {
+      svg.lucide-music {
         display: inline-block !important;
         stroke: currentColor !important;
       }
 
+      .lucide-skip-back,
+      .lucide-play,
+      .lucide-pause,
+      .lucide-skip-forward,
+      svg.lucide-skip-back,
+      svg.lucide-play,
+      svg.lucide-pause,
+      svg.lucide-skip-forward {
+        stroke: #ffffff !important;
+        color: #ffffff !important;
+        display: inline-block !important;
+        width: 14px !important;
+        height: 14px !important;
+      }
+
       /* Media Player Controls */
+      .group-hover\:opacity-100 button,
       button[title="Previous Track"],
       button[title="Next Track"],
       button[title="Play"],
@@ -61,16 +77,18 @@
         align-items: center !important;
         justify-content: center !important;
         cursor: pointer !important;
-        color: #f4f4f5 !important;
+        color: #ffffff !important;
       }
       button[title="Previous Track"] svg,
       button[title="Next Track"] svg,
       button[title="Play"] svg,
-      button[title="Pause"] svg {
+      button[title="Pause"] svg,
+      .group-hover\:opacity-100 button svg {
         display: inline-block !important;
         width: 14px !important;
         height: 14px !important;
-        stroke: #f4f4f5 !important;
+        stroke: #ffffff !important;
+        color: #ffffff !important;
       }
 
       /* --- Workspaces --- */
@@ -173,8 +191,12 @@
         font-weight: 700;
       }
 
-      /* --- Center Media Controls --- */
-      [title="No Media Active"] {
+      /* --- Center Media Controls: Ghost Box Prevention --- */
+      [title="No Media Active"],
+      #root [title="No Media Active"],
+      #root [title*="No Media"],
+      .media-empty,
+      #root:empty {
         display: none !important;
       }
     </style>
