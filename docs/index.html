@@ -1940,7 +1940,7 @@
           <div class="command-box">
             <div class="command-code-wrap" id="command-display-wrap" onclick="selectCommandText()">
               <span class="command-prompt-symbol">PS &gt;</span>
-              <code id="hero-command-text">&amp; { irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex } -Preset belal-catppuccin</code>
+              <code id="hero-command-text">&amp; ([scriptblock]::Create((irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1))) -Preset belal-catppuccin</code>
             </div>
             <button class="btn-copy-command" id="btn-copy-hero" onclick="copyHeroCommand()" title="Copy command to clipboard">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3241,9 +3241,9 @@
       const preset = state.activePreset;
       if (state.commandTab === 'ps1') {
         if (preset === 'belal-catppuccin') {
-          codeEl.textContent = '& { irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex } -Preset belal-catppuccin';
+          codeEl.textContent = '& ([scriptblock]::Create((irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1))) -Preset belal-catppuccin';
         } else {
-          codeEl.textContent = `& { irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex } -Preset ${preset}`;
+          codeEl.textContent = `& ([scriptblock]::Create((irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1))) -Preset ${preset}`;
         }
       } else {
         codeEl.textContent = `git clone https://github.com/belal-waheed/devbox-win.git; cd devbox-win; ./bootstrap.ps1 -Preset ${preset}`;
@@ -3404,7 +3404,7 @@
 
     function copyTailoredCommand() {
       const pathVal = document.getElementById('cfg-install-path')?.value || 'D:\\Tools';
-      const cmd = `& { irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1 | iex } -InstallLocation "${pathVal}"`;
+      const cmd = `& ([scriptblock]::Create((irm https://raw.githubusercontent.com/belal-waheed/devbox-win/main/bootstrap.ps1))) -InstallLocation "${pathVal}"`;
       safeCopyText(cmd, null, 'Tailored command copied!');
     }
 

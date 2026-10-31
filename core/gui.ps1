@@ -10,7 +10,9 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot = "",
-    [switch]$DryRun
+    [switch]$DryRun,
+    [string]$Preset = "",
+    [switch]$NoShow
 )
 
 Set-StrictMode -Version Latest
@@ -26,11 +28,15 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
 
 # Pre-detect system capabilities for badge display
 $devModeReg = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock"
-$devModeVal = (Get-ItemProperty -Path $devModeReg -ErrorAction SilentlyContinue).AllowDevelopmentWithoutDevLicense
+$devModeVal = $null
+$devModeItem = Get-ItemProperty -Path $devModeReg -ErrorAction SilentlyContinue
+if ($null -ne $devModeItem -and ($devModeItem.PSObject.Properties.Match('AllowDevelopmentWithoutDevLicense').Count -gt 0)) {
+    $devModeVal = $devModeItem.AllowDevelopmentWithoutDevLicense
+}
 $isDevMode = ($devModeVal -eq 1)
 $devModeText = if ($isDevMode) { "Dev Mode: Enabled" } else { "Dev Mode: Disabled" }
 $osBuild = [Environment]::OSVersion.Version.Build
-$psVer = $PSVersionTable.PSVersion.ToString(3)
+$psVer = ($PSVersionTable.PSVersion.ToString() -split '\.')[0..2] -join '.'
 
 # Build XAML string for WPF Window
 $xaml = @"
@@ -419,8 +425,13 @@ $xaml = @"
 </Window>
 "@
 
-$reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
-$window = [System.Windows.Markup.XamlReader]::Load($reader)
+try {
+    $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
+    $window = [System.Windows.Markup.XamlReader]::Load($reader)
+} catch {
+    Write-Error "Failed to parse devbox-win GUI XAML: $($_.Exception.Message)"
+    throw $_
+}
 
 # Element References
 $chk_zed = $window.FindName("chk_zed")
@@ -609,6 +620,12 @@ function Apply-PresetState([string]$PresetName) {
 ($window.FindName("btnSelectAll")).Add_Click({ Apply-PresetState "selectall" })
 ($window.FindName("btnClearAll")).Add_Click({ Apply-PresetState "clearall" })
 
+# Pre-select preset if provided via parameter
+if (-not [string]::IsNullOrWhiteSpace($Preset)) {
+    $cleanPreset = $Preset.ToLower().Replace("belal-", "")
+    Apply-PresetState $cleanPreset
+}
+
 # Attach Browse Custom Path Handler
 if ($btnBrowsePath) {
     $btnBrowsePath.Add_Click({
@@ -779,7 +796,13 @@ $script:GuiResult = [PSCustomObject]@{
     $window.Close()
 })
 
+# Expose window references for headless testing & verification
+$script:DevboxGuiWindow = $window
+$global:DevboxGuiWindow = $window
+
 # Show Dialog
-$null = $window.ShowDialog()
+if (-not $NoShow) {
+    $null = $window.ShowDialog()
+}
 
 return $script:GuiResult

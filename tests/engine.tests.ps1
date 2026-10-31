@@ -384,6 +384,27 @@ Write-DevboxSection "Test: Windows Developer Utility GUI (WPF)"
 $guiPath = Join-Path $projectRoot "core\gui.ps1"
 Assert-True (Test-Path $guiPath) "core/gui.ps1 exists on disk"
 
+# Headless WPF GUI Initialization Test Group
+$guiErr = $null
+$guiExecRes = $null
+try {
+    $guiExecRes = & $guiPath -RepoRoot $projectRoot -NoShow
+} catch {
+    $guiErr = $_
+}
+Assert-True ($null -eq $guiErr) "Invoking core/gui.ps1 with -NoShow completes with zero errors"
+Assert-True ($null -ne $guiExecRes -and $guiExecRes.Action -eq "Cancel") "GUI returns default cancel state in headless mode"
+
+$guiDotResult = . $guiPath -RepoRoot $projectRoot -Preset "belal-catppuccin" -NoShow
+Assert-True ($null -ne $script:DevboxGuiWindow) "WPF window object DevboxGuiWindow is instantiated"
+Assert-True ($null -ne $chk_zed) "Checkbox chk_zed exists and is resolved"
+Assert-True ($null -ne $chk_glazewm) "Checkbox chk_glazewm exists and is resolved"
+Assert-True ($null -ne $chk_starship) "Checkbox chk_starship exists and is resolved"
+Assert-True ($null -ne $chk_node) "Checkbox chk_node exists and is resolved"
+Assert-True ($null -ne $chk_docker) "Checkbox chk_docker exists and is resolved"
+Assert-True ($chk_zed.IsChecked -eq $true) "Preset belal-catppuccin marks chk_zed as checked"
+Assert-True ($chk_glazewm.IsChecked -eq $true) "Preset belal-catppuccin marks chk_glazewm as checked"
+
 $dummyConfig = [ordered]@{
     user = [ordered]@{ name = "TestUser"; email = "test@domain.com"; github_username = "testgit" }
     preset = "belal-catppuccin"

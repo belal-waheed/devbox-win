@@ -340,7 +340,8 @@ Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
 $guiScript = Join-Path $workDir "core\gui.ps1"
 if ([System.Windows.Forms.SystemInformation]::UserInteractive -and (Test-Path $guiScript) -and (($engineParams.Count -eq 0) -or $Gui) -and (-not $NonInteractive) -and (-not $Silent)) {
     Write-BootInfo "Launching devbox-win Windows Developer Utility (GUI)..."
-    $guiResult = & $guiScript -RepoRoot $workDir
+    $guiPreset = if ($Preset) { $Preset } else { "" }
+    $guiResult = & $guiScript -RepoRoot $workDir -Preset $guiPreset
     if ($null -ne $guiResult -and $guiResult.Action -ne "Cancel") {
         if ($guiResult.Action -eq "Doctor") {
             & $engineScript -Doctor
