@@ -21,6 +21,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 }
 
+. (Join-Path $PSScriptRoot "lifecycle.ps1")
 . (Join-Path $PSScriptRoot "logger.ps1")
 . (Join-Path $PSScriptRoot "manifest.ps1")
 . (Join-Path $PSScriptRoot "symlink.ps1")
@@ -444,18 +445,18 @@ if ($MyInvocation.InvocationName -ne '.') {
     if ($Restore) {
         if ([string]::IsNullOrWhiteSpace($BackupPath)) {
             Write-DevboxFail "Restore requires -BackupPath <path-to-zip>"
-            exit 1
+            return (Complete-DevboxSession -ExitCode 1)
         }
         $res = Invoke-DevboxRestore -BackupPath $BackupPath -RepoRoot $RepoRoot -DryRun:$DryRun
-        if ($res.Status -eq "FAIL") { exit 1 } else { exit 0 }
+        if ($res.Status -eq "FAIL") { return (Complete-DevboxSession -ExitCode 1) } else { return (Complete-DevboxSession -ExitCode 0) }
     } elseif ($Backup) {
         $res = Invoke-DevboxBackup -BackupPath $BackupPath -IncludeSSHKeys:$IncludeSSHKeys -RepoRoot $RepoRoot -DryRun:$DryRun
-        if ($res.Status -eq "FAIL") { exit 1 } else { exit 0 }
+        if ($res.Status -eq "FAIL") { return (Complete-DevboxSession -ExitCode 1) } else { return (Complete-DevboxSession -ExitCode 0) }
     } else {
         Write-DevboxBanner -SubTitle "Backup & Disaster Recovery"
         Write-Host "Usage:"
         Write-Host "  Create Backup:  pwsh -NoProfile -File core/engine.ps1 -Backup [-BackupPath <p>] [-IncludeSSHKeys]"
         Write-Host "  Restore Backup: pwsh -NoProfile -File core/engine.ps1 -Restore -BackupPath <p> [-DryRun]"
-        exit 0
+        return (Complete-DevboxSession -ExitCode 0)
     }
 }

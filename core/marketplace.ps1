@@ -19,6 +19,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 }
 
+. (Join-Path $PSScriptRoot "lifecycle.ps1")
 . (Join-Path $PSScriptRoot "logger.ps1")
 . (Join-Path $PSScriptRoot "config.ps1")
 
@@ -353,9 +354,9 @@ if ($MyInvocation.InvocationName -ne '.') {
     if ($InstallModule) {
         Write-DevboxBanner -SubTitle "Community Module Installer"
         $res = Install-DevboxCommunityModule -NameOrUrl $InstallModule -RepoRoot $RepoRoot -DryRun:$DryRun
-        if ($res.Status -eq "FAIL") { exit 1 } else { exit 0 }
+        if ($res.Status -eq "FAIL") { return (Complete-DevboxSession -ExitCode 1) } else { return (Complete-DevboxSession -ExitCode 0) }
     } else {
         Show-DevboxMarketplace -RepoRoot $RepoRoot
-        exit 0
+        return (Complete-DevboxSession -ExitCode 0)
     }
 }

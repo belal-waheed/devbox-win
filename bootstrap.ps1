@@ -46,6 +46,32 @@ param(
 
 Set-StrictMode -Version Latest
 
+# Process Lifecycle & Session Termination Manager
+$lifecyclePath = if ($PSScriptRoot) { Join-Path $PSScriptRoot "core\lifecycle.ps1" } else { Join-Path $HOME ".devbox-win\repo\core\lifecycle.ps1" }
+if (Test-Path $lifecyclePath) {
+    . $lifecyclePath
+} else {
+    function Test-DevboxOwnsFileProcess {
+        if ([string]::IsNullOrWhiteSpace($PSCommandPath)) { return $false }
+        try {
+            $cmdArgs = [System.Environment]::GetCommandLineArgs()
+            if ($null -eq $cmdArgs -or $cmdArgs.Count -eq 0) { return $false }
+            for ($i = 0; $i -lt $cmdArgs.Count; $i++) {
+                if ($cmdArgs[$i] -match '^[-/](f|file)$') { return $true }
+            }
+            return $false
+        } catch { return $false }
+    }
+    function Complete-DevboxSession {
+        param([int]$ExitCode = 0)
+        $global:LASTEXITCODE = $ExitCode
+        if ($env:DEVBOX_HEADLESS_CHILD -eq "1" -or (Test-DevboxOwnsFileProcess)) {
+            exit $ExitCode
+        }
+        return $ExitCode
+    }
+}
+
 # ANSI Color Codes
 $C_Reset   = "`e[0m"
 $C_Bold    = "`e[1m"
@@ -69,7 +95,7 @@ Write-Host "$C_Cyan$C_Bold======================================================
 $osBuild = [System.Environment]::OSVersion.Version.Build
 if ($osBuild -lt 22000) {
     Write-BootFail "Unsupported Operating System (Build $osBuild). devbox-win requires Windows 11 (Build 22000+)."
-    exit 1
+    return (Complete-DevboxSession -ExitCode 1)
 }
 Write-BootOk "Operating System: Windows 11 (Build $osBuild)"
 
@@ -112,7 +138,7 @@ if (-not $SkipDevMode) {
 $wingetCmd = Get-Command "winget" -ErrorAction SilentlyContinue
 if (-not $wingetCmd) {
     Write-BootFail "winget is not available in PATH. Please install 'App Installer' from the Microsoft Store or update Windows."
-    exit 1
+    return (Complete-DevboxSession -ExitCode 1)
 }
 Write-BootOk "Package manager: winget is available"
 
@@ -147,33 +173,76 @@ if ($psMajor -lt 7) {
 
     if ($foundPwsh) {
         Write-BootInfo "Respawning under PowerShell 7 ($foundPwsh)..."
-        $scriptPath = if ($MyInvocation.MyCommand.Path) { $MyInvocation.MyCommand.Path } else { "$env:TEMP\devbox_bootstrap.ps1" }
-        if (-not (Test-Path $scriptPath)) {
-            $scriptContent = $MyInvocation.MyCommand.ScriptContents
-            Set-Content -Path $scriptPath -Value $scriptContent -Encoding utf8
+        $scriptPath = if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path) -and ((Get-Item $MyInvocation.MyCommand.Path).Length -ge 1000)) {
+            $MyInvocation.MyCommand.Path
+        } else {
+            Join-Path $env:TEMP "devbox_bootstrap.ps1"
+        }
+
+        if (-not (Test-Path $scriptPath) -or ((Get-Item $scriptPath).Length -lt 1000)) {
+            Write-BootInfo "Downloading verified bootstrap script from repository..."
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+            $rawBase = $RepoUrl -replace '\.git$', '' -replace 'https://github\.com/', 'https://raw.githubusercontent.com/'
+            $downloadUrl = "$rawBase/$Branch/bootstrap.ps1"
+            try {
+                Invoke-RestMethod -Uri $downloadUrl -OutFile $scriptPath -ErrorAction Stop
+            } catch {
+                try {
+                    $webClient = New-Object System.Net.WebClient
+                    $webClient.DownloadFile($downloadUrl, $scriptPath)
+                } catch {
+                    Write-BootFail "Failed to download bootstrap.ps1 from $($downloadUrl): $($_.Exception.Message)"
+                }
+            }
+        }
+
+        if (-not (Test-Path $scriptPath) -or ((Get-Item $scriptPath).Length -lt 1000)) {
+            Write-BootFail "Verified bootstrap script not found or incomplete at: $scriptPath"
+            return (Complete-DevboxSession -ExitCode 1)
         }
 
         $argList = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $scriptPath)
-        if ($ConfigFile) { $argList += "-ConfigFile"; $argList += $ConfigFile }
-        if ($InstallLocation) { $argList += "-InstallLocation"; $argList += $InstallLocation }
+        if ($RepoUrl) { $argList += @("-RepoUrl", $RepoUrl) }
+        if ($Branch) { $argList += @("-Branch", $Branch) }
+        if ($TargetDir) { $argList += @("-TargetDir", $TargetDir) }
+        if ($ConfigFile) { $argList += @("-ConfigFile", $ConfigFile) }
+        if ($InstallLocation) { $argList += @("-InstallLocation", $InstallLocation) }
         if ($DryRun) { $argList += "-DryRun" }
-        if ($Module) { $argList += "-Module"; $argList += $Module }
+        if ($Module) { $argList += @("-Module", $Module) }
         if ($Retry)  { $argList += "-Retry" }
         if ($Resume) { $argList += "-Resume" }
         if ($Wizard) { $argList += "-Wizard" }
-        if ($Preset) { $argList += "-Preset"; $argList += $Preset }
+        if ($Preset) { $argList += @("-Preset", $Preset) }
         if ($Doctor) { $argList += "-Doctor" }
         if ($Export) { $argList += "-Export" }
-        if ($ExportPath) { $argList += "-ExportPath"; $argList += $ExportPath }
+        if ($ExportPath) { $argList += @("-ExportPath", $ExportPath) }
         if ($Uninstall) { $argList += "-Uninstall" }
         if ($UninstallPackages) { $argList += "-UninstallPackages" }
+        if ($Sync) { $argList += "-Sync" }
+        if ($Push) { $argList += "-Push" }
+        if ($Pull) { $argList += "-Pull" }
+        if ($Backup) { $argList += "-Backup" }
+        if ($BackupPath) { $argList += @("-BackupPath", $BackupPath) }
+        if ($IncludeSSHKeys) { $argList += "-IncludeSSHKeys" }
+        if ($Restore) { $argList += "-Restore" }
+        if ($Marketplace) { $argList += "-Marketplace" }
+        if ($InstallModule) { $argList += @("-InstallModule", $InstallModule) }
+        if ($ListModules) { $argList += "-ListModules" }
+        if ($Dashboard) { $argList += "-Dashboard" }
+        if ($NoLaunch) { $argList += "-NoLaunch" }
+        if ($Gui) { $argList += "-Gui" }
+        if ($NonInteractive) { $argList += "-NonInteractive" }
+        if ($Silent) { $argList += "-Silent" }
+        if ($SkipDevMode) { $argList += "-SkipDevMode" }
         if ($Help)   { $argList += "-Help" }
 
-        Start-Process -FilePath $foundPwsh -ArgumentList $argList -Wait -NoNewWindow
-        exit 0
+        $proc = Start-Process -FilePath $foundPwsh -ArgumentList $argList -Wait -PassThru -NoNewWindow
+        $respawnExitCode = if ($null -ne $proc.ExitCode) { $proc.ExitCode } else { 0 }
+        $global:LASTEXITCODE = $respawnExitCode
+        return (Complete-DevboxSession -ExitCode $respawnExitCode)
     } else {
         Write-BootFail "Failed to locate or install PowerShell 7. Please install it manually and re-run."
-        exit 1
+        return (Complete-DevboxSession -ExitCode 1)
     }
 }
 Write-BootOk "Runtime: PowerShell $($PSVersionTable.PSVersion)"
@@ -228,7 +297,12 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "core\engine.ps1"))) 
 $engineScript = Join-Path $workDir "core\engine.ps1"
 if (-not (Test-Path $engineScript)) {
     Write-BootFail "Core engine not found at: $engineScript"
-    exit 1
+    return (Complete-DevboxSession -ExitCode 1)
+}
+
+$workDirLifecycle = Join-Path $workDir "core\lifecycle.ps1"
+if (Test-Path $workDirLifecycle) {
+    . $workDirLifecycle
 }
 
 $engineParams = @{}
@@ -270,15 +344,15 @@ if ([System.Windows.Forms.SystemInformation]::UserInteractive -and (Test-Path $g
     if ($null -ne $guiResult -and $guiResult.Action -ne "Cancel") {
         if ($guiResult.Action -eq "Doctor") {
             & $engineScript -Doctor
-            exit $LASTEXITCODE
+            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
         }
         if ($guiResult.Action -eq "Backup") {
             & $engineScript -Backup
-            exit $LASTEXITCODE
+            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
         }
         if ($guiResult.Action -eq "Export") {
             & $engineScript -Export
-            exit $LASTEXITCODE
+            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
         }
         if ($guiResult.Action -in @("Install", "DryRun")) {
             . (Join-Path $workDir "core\config.ps1")
@@ -287,14 +361,14 @@ if ([System.Windows.Forms.SystemInformation]::UserInteractive -and (Test-Path $g
             $isDry = ($guiResult.DryRun -or $DryRun)
             Write-BootInfo "Applying configuration from GUI selection..."
             & $engineScript -ConfigFile $userConfigYaml -DryRun:$isDry
-            exit $LASTEXITCODE
+            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
         }
     } else {
         Write-BootInfo "Devbox Windows Utility closed by user."
-        exit 0
+        return (Complete-DevboxSession -ExitCode 0)
     }
 }
 
 Write-BootInfo "Transferring execution to core engine..."
 & $engineScript @engineParams
-exit $LASTEXITCODE
+return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)

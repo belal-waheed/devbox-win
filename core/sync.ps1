@@ -19,6 +19,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 }
 
+. (Join-Path $PSScriptRoot "lifecycle.ps1")
 . (Join-Path $PSScriptRoot "logger.ps1")
 
 function Get-DevboxSyncStatus {
@@ -409,5 +410,5 @@ function Invoke-DevboxSync {
 # Direct invocation handling
 if ($MyInvocation.InvocationName -ne '.') {
     $res = Invoke-DevboxSync -RepoRoot $RepoRoot -Push:$Push -Pull:$Pull -DryRun:$DryRun
-    if ($res.Status -eq "FAIL") { exit 1 } else { exit 0 }
+    if ($res.Status -eq "FAIL") { return (Complete-DevboxSession -ExitCode 1) } else { return (Complete-DevboxSession -ExitCode 0) }
 }

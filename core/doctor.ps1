@@ -15,6 +15,7 @@ Set-StrictMode -Version Latest
 
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 
+. (Join-Path $PSScriptRoot "lifecycle.ps1")
 . (Join-Path $PSScriptRoot "logger.ps1")
 . (Join-Path $PSScriptRoot "manifest.ps1")
 . (Join-Path $PSScriptRoot "symlink.ps1")
@@ -444,12 +445,15 @@ function Invoke-DevboxDoctor {
     }
 
     if ($failCount -gt 0) {
-        exit 1
+        return (Complete-DevboxSession -ExitCode 1)
     } else {
-        exit 0
+        return (Complete-DevboxSession -ExitCode 0)
     }
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
-    Invoke-DevboxDoctor -AsObject:$AsObject -Quiet:$Quiet
+    $doctorRet = Invoke-DevboxDoctor -AsObject:$AsObject -Quiet:$Quiet
+    if (-not $AsObject) {
+        return $doctorRet
+    }
 }

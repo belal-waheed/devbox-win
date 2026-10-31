@@ -20,6 +20,7 @@ param(
 
 Set-StrictMode -Version Latest
 
+. (Join-Path $PSScriptRoot "lifecycle.ps1")
 . (Join-Path $PSScriptRoot "logger.ps1")
 . (Join-Path $PSScriptRoot "config.ps1")
 
@@ -481,7 +482,7 @@ envvars:
         Write-DevboxOk "Configuration successfully generated at: $OutputPath"
     } catch {
         Write-DevboxFail "Failed to write configuration file to $OutputPath" $_.Exception.Message
-        exit 1
+        return (Complete-DevboxSession -ExitCode 1)
     }
 
     # Optional immediate execution

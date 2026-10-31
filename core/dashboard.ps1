@@ -18,6 +18,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 }
 
+. (Join-Path $PSScriptRoot "lifecycle.ps1")
 . (Join-Path $PSScriptRoot "logger.ps1")
 . (Join-Path $PSScriptRoot "config.ps1")
 . (Join-Path $PSScriptRoot "doctor.ps1")
@@ -913,5 +914,5 @@ function Show-DevboxDashboard {
 
 if ($MyInvocation.InvocationName -ne '.') {
     $res = Show-DevboxDashboard -OutputPath $OutputPath -NoLaunch:$NoLaunch -RepoRoot $RepoRoot
-    if ($res.Status -eq "FAIL") { exit 1 } else { exit 0 }
+    if ($res.Status -eq "FAIL") { return (Complete-DevboxSession -ExitCode 1) } else { return (Complete-DevboxSession -ExitCode 0) }
 }

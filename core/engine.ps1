@@ -42,6 +42,7 @@ $startTime = [System.Diagnostics.Stopwatch]::StartNew()
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 
 # Load Core Libraries
+. (Join-Path $PSScriptRoot "lifecycle.ps1")
 . (Join-Path $PSScriptRoot "logger.ps1")
 . (Join-Path $PSScriptRoot "config.ps1")
 . (Join-Path $PSScriptRoot "state.ps1")
@@ -85,44 +86,44 @@ function Show-DevboxHelp {
 # Handle Help Request
 if ($Help) {
     Show-DevboxHelp
-    exit 0
+    return (Complete-DevboxSession -ExitCode 0)
 }
 
 # Handle Community Module Marketplace Request
 if ($Marketplace -or $ListModules -or $InstallModule) {
     & (Join-Path $PSScriptRoot "marketplace.ps1") -InstallModule $InstallModule -ListModules:$ListModules -RepoRoot $repoRoot -DryRun:$DryRun
-    exit $LASTEXITCODE
+    return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
 }
 
 # Handle Git Synchronization Request
 if ($Sync -or $Push -or $Pull) {
     & (Join-Path $PSScriptRoot "sync.ps1") -Push:$Push -Pull:$Pull -DryRun:$DryRun -RepoRoot $repoRoot
-    exit $LASTEXITCODE
+    return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
 }
 
 # Handle Backup / Disaster Recovery Request
 if ($Backup -or $Restore) {
     & (Join-Path $PSScriptRoot "backup.ps1") -Backup:$Backup -Restore:$Restore -BackupPath $BackupPath -IncludeSSHKeys:$IncludeSSHKeys -DryRun:$DryRun -RepoRoot $repoRoot
-    exit $LASTEXITCODE
+    return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
 }
 
 # Handle Visual Dashboard Request
 if ($Dashboard) {
     & (Join-Path $PSScriptRoot "dashboard.ps1") -NoLaunch:$NoLaunch -RepoRoot $repoRoot
-    exit $LASTEXITCODE
+    return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
 }
 
 # Handle Health Audit Request (Doctor)
 if ($Doctor) {
     & (Join-Path $PSScriptRoot "doctor.ps1")
-    exit $LASTEXITCODE
+    return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
 }
 
 # Handle Reverse-Engineering Export Request
 if ($Export) {
     $targetOut = if ($ExportPath) { $ExportPath } else { Join-Path $repoRoot "config.exported.yaml" }
     & (Join-Path $PSScriptRoot "export.ps1") -OutputPath $targetOut
-    exit $LASTEXITCODE
+    return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
 }
 
 # Handle GUI Utility Request (CTT winutil style)
@@ -137,15 +138,15 @@ if ($Gui) {
             if ($guiRes.DryRun) { $DryRun = $true }
         } elseif ($guiRes.Action -eq "Doctor") {
             & (Join-Path $PSScriptRoot "doctor.ps1")
-            exit $LASTEXITCODE
+            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
         } elseif ($guiRes.Action -eq "Backup") {
             & (Join-Path $PSScriptRoot "backup.ps1") -Backup
-            exit $LASTEXITCODE
+            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
         } elseif ($guiRes.Action -eq "Export") {
             & (Join-Path $PSScriptRoot "export.ps1")
-            exit $LASTEXITCODE
+            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
         } else {
-            exit 0
+            return (Complete-DevboxSession -ExitCode 0)
         }
     }
 }
@@ -153,14 +154,14 @@ if ($Gui) {
 # Handle Interactive Wizard Request
 if ($Wizard) {
     & (Join-Path $PSScriptRoot "wizard.ps1")
-    exit 0
+    return (Complete-DevboxSession -ExitCode 0)
 }
 
 # Handle Uninstall / Revert Request
 if ($Uninstall) {
     Write-DevboxBanner
     Invoke-DevboxRevert -UninstallPackages:$UninstallPackages -DryRun:$DryRun
-    exit 0
+    return (Complete-DevboxSession -ExitCode 0)
 }
 
 # Resolve Configuration File
@@ -176,7 +177,7 @@ Write-DevboxBanner
 if (-not (Test-Path $ConfigFile)) {
     Write-DevboxInfo "No config file found. Launching interactive setup wizard..."
     & (Join-Path $PSScriptRoot "wizard.ps1")
-    exit 0
+    return (Complete-DevboxSession -ExitCode 0)
 }
 
 Write-DevboxInfo "Using configuration: $ConfigFile"
@@ -192,7 +193,7 @@ try {
     $config = Read-DevboxConfigFile -Path $ConfigFile -PresetOverride $Preset
 } catch {
     Write-DevboxFail "Failed to parse YAML configuration" $_.Exception.Message
-    exit 1
+    return (Complete-DevboxSession -ExitCode 1)
 }
 
 if (-not [string]::IsNullOrWhiteSpace($InstallLocation)) {
@@ -212,7 +213,7 @@ if (-not $validation.Valid) {
     foreach ($err in $validation.Errors) {
         Write-DevboxFail "Config Error: $err"
     }
-    exit 1
+    return (Complete-DevboxSession -ExitCode 1)
 }
 
 # Module Registry & Dependency Definition (Full 12 Modules)
@@ -359,7 +360,7 @@ if ($Module) {
     $targetMod = $Module.ToLower()
     if (-not $moduleRegistry.Contains($targetMod)) {
         Write-DevboxFail "Unknown module: $Module. Available modules: $($moduleRegistry.Keys -join ', ')"
-        exit 1
+        return (Complete-DevboxSession -ExitCode 1)
     }
     $enabledModules.Add($targetMod)
 } elseif ($Retry) {
@@ -371,7 +372,7 @@ if ($Module) {
 
     if ($failedKeys.Count -eq 0) {
         Write-DevboxOk "No failed modules found to retry."
-        exit 0
+        return (Complete-DevboxSession -ExitCode 0)
     }
 
     Write-DevboxInfo "Retrying $($failedKeys.Count) failed module(s): $($failedKeys -join ', ')"
@@ -507,7 +508,7 @@ Write-DevboxSummary -Results $results -Duration $startTime.Elapsed
 
 $hasFailures = @($results | Where-Object { $_.Status -eq "FAIL" }).Count -gt 0
 if ($hasFailures) {
-    exit 1
+    return (Complete-DevboxSession -ExitCode 1)
 } else {
-    exit 0
+    return (Complete-DevboxSession -ExitCode 0)
 }
