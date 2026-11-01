@@ -405,6 +405,40 @@ Assert-True ($null -ne $chk_docker) "Checkbox chk_docker exists and is resolved"
 Assert-True ($chk_zed.IsChecked -eq $true) "Preset belal-catppuccin marks chk_zed as checked"
 Assert-True ($chk_glazewm.IsChecked -eq $true) "Preset belal-catppuccin marks chk_glazewm as checked"
 
+# Modern 2-Column Sidebar & Live Package Detection Verification Group
+Assert-True ($null -ne $btnScanInstalled) "Scan button btnScanInstalled exists and is resolved"
+Assert-True ($null -ne $txtSearch) "Search input txtSearch exists and is resolved"
+Assert-True ($null -ne $btnNavToolchain) "Sidebar navigation button btnNavToolchain exists and is resolved"
+Assert-True ($null -ne $btnNavTiling) "Sidebar navigation button btnNavTiling exists and is resolved"
+Assert-True ($null -ne $btnNavRuntimes) "Sidebar navigation button btnNavRuntimes exists and is resolved"
+Assert-True ($null -ne $badge_zed) "Status badge badge_zed exists and is resolved"
+Assert-True ($null -ne $badge_vscode) "Status badge badge_vscode exists and is resolved"
+Assert-True ($null -ne $badge_docker) "Status badge badge_docker exists and is resolved"
+
+$badgeScanErr = $null
+try {
+    Update-PackageInstallBadges
+} catch {
+    $badgeScanErr = $_.Exception.Message
+}
+Assert-True ($null -eq $badgeScanErr) "Update-PackageInstallBadges executes without exception"
+Assert-True ($badge_zed.Text -in @("INSTALLED", "AVAILABLE")) "Badge text evaluates to valid status enum (INSTALLED or AVAILABLE)"
+
+# Preset State Switching Verification
+Apply-PresetState "minimal"
+Assert-True ($chk_terminal.IsChecked -eq $true -and $chk_zed.IsChecked -eq $false -and $chk_docker.IsChecked -eq $false) "Apply-PresetState minimal sets expected minimal checkboxes"
+
+Apply-PresetState "catppuccin"
+Assert-True ($chk_zed.IsChecked -eq $true -and $chk_glazewm.IsChecked -eq $true -and $chk_docker.IsChecked -eq $true) "Apply-PresetState catppuccin sets expected signature rice checkboxes"
+
+# Compiled Config Verification from UI
+$uiCompiledConfig = Get-CompiledConfigFromUI
+Assert-True ($null -ne $uiCompiledConfig) "Get-CompiledConfigFromUI returns non-null configuration"
+Assert-True ($uiCompiledConfig.packages.Count -gt 0) "Get-CompiledConfigFromUI compiles selected packages count"
+Assert-True ($uiCompiledConfig.modules.packages -eq $true) "Get-CompiledConfigFromUI marks packages module enabled"
+Assert-True ($uiCompiledConfig.editor.primary -eq "zed") "Get-CompiledConfigFromUI sets primary editor"
+Assert-True ($uiCompiledConfig.glazewm.hide_method -eq "cloak") "Get-CompiledConfigFromUI sets GlazeWM hide_method"
+
 $dummyConfig = [ordered]@{
     user = [ordered]@{ name = "TestUser"; email = "test@domain.com"; github_username = "testgit" }
     preset = "belal-catppuccin"
