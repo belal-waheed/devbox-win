@@ -107,7 +107,7 @@ function Invoke-DevboxExport {
     $wingetCmd = Get-Command "winget" -ErrorAction SilentlyContinue
     if ($wingetCmd) {
         $lines = & winget list 2>$null
-        if ($lines -and $lines.Count -gt 1) {
+        if ($lines -and @($lines).Count -gt 1) {
             $header = $lines[0]
             $idIdx = $header.IndexOf("Id")
             $verIdx = $header.IndexOf("Version")

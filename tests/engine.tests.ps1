@@ -649,7 +649,40 @@ Assert-True ($dec5 -eq $false) "Interactive session with CLI maintenance command
 $dec6 = Test-BootstrapGuiCondition -UserInteractive $true -NonInteractive $false -Silent $false -GuiScriptExists $true -IsCliMaintenance $false -EngineParamsCount 0 -Gui $false -Preset ""
 Assert-True ($dec6 -eq $true) "Interactive session with zero arguments launches GUI"
 
-# Test 22: PowerShell AST Syntax Validation
+# Test 22: Single-Item Strict Mode Pipeline Resilience
+Write-DevboxSection "Test: Single-Item Strict Mode Pipeline Resilience"
+
+# Databases module strict mode tests
+$dbScript = Join-Path $projectRoot "modules\databases.ps1"
+$dbResEmpty = & $dbScript -Config @{ databases = @() } -DryRun
+Assert-True ($dbResEmpty.Status -eq "SKIP") "Databases module handles empty collection without error"
+
+$dbResScalar = & $dbScript -Config @{ databases = "SQLite.SQLite" } -DryRun
+Assert-True ($dbResScalar.Status -in @("OK", "SKIP")) "Databases module handles single scalar string without PropertyNotFoundException"
+
+$dbResList = & $dbScript -Config @{ databases = @("SQLite.SQLite") } -DryRun
+Assert-True ($dbResList.Status -in @("OK", "SKIP")) "Databases module handles single-item list without PropertyNotFoundException"
+
+# Packages module strict mode tests
+$pkgScript = Join-Path $projectRoot "modules\packages.ps1"
+$pkgResEmpty = & $pkgScript -Config @{ packages = @() } -DryRun
+Assert-True ($pkgResEmpty.Status -eq "SKIP") "Packages module handles empty collection without error"
+
+$pkgResScalar = & $pkgScript -Config @{ packages = "Zed.Zed" } -DryRun
+Assert-True ($pkgResScalar.Status -in @("OK", "SKIP")) "Packages module handles single scalar package without PropertyNotFoundException"
+
+$pkgResList = & $pkgScript -Config @{ packages = @("Zed.Zed") } -DryRun
+Assert-True ($pkgResList.Status -in @("OK", "SKIP")) "Packages module handles single-item package list without PropertyNotFoundException"
+
+# Runtimes module strict mode tests
+$rtScript = Join-Path $projectRoot "modules\runtimes.ps1"
+$rtResScalar = & $rtScript -Config @{ runtimes = @{ dotnet = @{ versions = "9.0" } } } -DryRun
+Assert-True ($rtResScalar.Status -in @("OK", "SKIP")) "Runtimes module handles single scalar .NET version without error"
+
+$rtResList = & $rtScript -Config @{ runtimes = @{ dotnet = @{ versions = @("9.0") } } } -DryRun
+Assert-True ($rtResList.Status -in @("OK", "SKIP")) "Runtimes module handles single-item .NET version array without error"
+
+# Test 23: PowerShell AST Syntax Validation
 $allScripts = Get-ChildItem -Path $projectRoot -Filter "*.ps1" -Recurse
 foreach ($s in $allScripts) {
     $tokens = $null

@@ -162,7 +162,17 @@ function Invoke-DevboxRuntimesModule {
     # 4. .NET SDKs
     if ($runtimes.Contains("dotnet") -and ($null -ne $runtimes["dotnet"])) {
         $dotnetCfg = $runtimes["dotnet"]
-        $requestedVersions = if ($dotnetCfg.Contains("versions")) { @($dotnetCfg["versions"]) } else { @("8.0") }
+        $requestedVersions = [System.Collections.Generic.List[string]]::new()
+        if ($dotnetCfg.Contains("versions") -and ($null -ne $dotnetCfg["versions"])) {
+            $rawVers = $dotnetCfg["versions"]
+            if ($rawVers -is [System.Collections.IEnumerable] -and -not ($rawVers -is [string])) {
+                foreach ($v in $rawVers) { if ($v) { [void]$requestedVersions.Add($v.ToString().Trim()) } }
+            } elseif ($rawVers) {
+                [void]$requestedVersions.Add($rawVers.ToString().Trim())
+            }
+        } else {
+            [void]$requestedVersions.Add("8.0")
+        }
 
         $installedSdks = ""
         if (Test-CommandAvailable "dotnet") {

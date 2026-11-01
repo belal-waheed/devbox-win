@@ -348,16 +348,19 @@ if ($shouldLaunchGui) {
     $guiResult = & $guiScript -RepoRoot $workDir -Preset $guiPreset
     if ($null -ne $guiResult -and $guiResult.Action -ne "Cancel") {
         if ($guiResult.Action -eq "Doctor") {
-            & $engineScript -Doctor
-            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
+            $null = & $engineScript -Doctor
+            $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
+            return (Complete-DevboxSession -ExitCode $exitCode)
         }
         if ($guiResult.Action -eq "Backup") {
-            & $engineScript -Backup
-            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
+            $null = & $engineScript -Backup
+            $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
+            return (Complete-DevboxSession -ExitCode $exitCode)
         }
         if ($guiResult.Action -eq "Export") {
-            & $engineScript -Export
-            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
+            $null = & $engineScript -Export
+            $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
+            return (Complete-DevboxSession -ExitCode $exitCode)
         }
         if ($guiResult.Action -in @("Install", "DryRun")) {
             . (Join-Path $workDir "core\config.ps1")
@@ -365,8 +368,9 @@ if ($shouldLaunchGui) {
             Export-GuiConfigToYamlFile -Config $guiResult.Config -Path $userConfigYaml
             $isDry = ($guiResult.DryRun -or $DryRun)
             Write-BootInfo "Applying configuration from GUI selection..."
-            & $engineScript -ConfigFile $userConfigYaml -DryRun:$isDry
-            return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
+            $null = & $engineScript -ConfigFile $userConfigYaml -DryRun:$isDry
+            $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
+            return (Complete-DevboxSession -ExitCode $exitCode)
         }
     } else {
         Write-BootInfo "Devbox Windows Utility closed by user."
@@ -375,5 +379,6 @@ if ($shouldLaunchGui) {
 }
 
 Write-BootInfo "Transferring execution to core engine..."
-& $engineScript @engineParams
-return (Complete-DevboxSession -ExitCode $global:LASTEXITCODE)
+$null = & $engineScript @engineParams
+$exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
+return (Complete-DevboxSession -ExitCode $exitCode)

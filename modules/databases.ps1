@@ -43,10 +43,16 @@ function Invoke-DevboxDatabasesModule {
         [switch]$DryRun
     )
 
-    $dbList = if ($Config.Contains("databases") -and ($null -ne $Config["databases"])) {
-        @($Config["databases"])
-    } else {
-        @()
+    $dbList = [System.Collections.Generic.List[string]]::new()
+    if ($Config.Contains("databases") -and ($null -ne $Config["databases"])) {
+        $rawDbs = $Config["databases"]
+        if ($rawDbs -is [System.Collections.IEnumerable] -and -not ($rawDbs -is [string])) {
+            foreach ($d in $rawDbs) {
+                if ($d) { [void]$dbList.Add($d.ToString().Trim()) }
+            }
+        } elseif ($rawDbs) {
+            [void]$dbList.Add($rawDbs.ToString().Trim())
+        }
     }
 
     if ($dbList.Count -eq 0) {

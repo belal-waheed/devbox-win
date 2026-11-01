@@ -47,10 +47,16 @@ function Invoke-DevboxPackagesModule {
         [switch]$DryRun
     )
 
-    $packages = if ($Config.Contains("packages") -and ($null -ne $Config["packages"])) {
-        @($Config["packages"])
-    } else {
-        @()
+    $packages = [System.Collections.Generic.List[string]]::new()
+    if ($Config.Contains("packages") -and ($null -ne $Config["packages"])) {
+        $rawPkgs = $Config["packages"]
+        if ($rawPkgs -is [System.Collections.IEnumerable] -and -not ($rawPkgs -is [string])) {
+            foreach ($p in $rawPkgs) {
+                if ($p) { [void]$packages.Add($p.ToString().Trim()) }
+            }
+        } elseif ($rawPkgs) {
+            [void]$packages.Add($rawPkgs.ToString().Trim())
+        }
     }
 
     if ($packages.Count -eq 0) {

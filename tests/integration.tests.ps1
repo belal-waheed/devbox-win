@@ -206,6 +206,55 @@ Assert-True ($res6.StdOut -match "Transferring execution to core engine") "StdOu
 Assert-True ($res6.StdOut -notmatch "Launching devbox-win Windows Developer Utility \(GUI\)") "StdOut confirms GUI was bypassed under -NonInteractive"
 
 # ------------------------------------------------------------------------------
+# Test 7: Real End-to-End Single-Item GUI Blueprint Execution
+# ------------------------------------------------------------------------------
+Write-DevboxSection "Test 7: Real End-to-End Single-Item GUI Blueprint Execution"
+
+$tmpYaml = Join-Path $env:TEMP ("devbox_single_item_blueprint_" + [System.Guid]::NewGuid().ToString("N") + ".yaml")
+$singleItemConfig = @"
+modules:
+  fonts: false
+  envvars: false
+  git: false
+  shell: false
+  editor: false
+  packages: false
+  runtimes: false
+  databases: true
+  keybindings: false
+  glazewm: false
+  zebar: false
+  dotfiles: true
+databases:
+  - SQLite.SQLite
+"@
+Set-Content -Path $tmpYaml -Value $singleItemConfig -Encoding utf8
+
+try {
+    $engineScriptPath = Join-Path $repoRoot "core\engine.ps1"
+    $res7 = Invoke-SubprocessCapture -FilePath "pwsh.exe" -ArgumentList @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $engineScriptPath,
+        "-ConfigFile", $tmpYaml,
+        "-DryRun"
+    )
+
+    Assert-Equal $res7.ExitCode 0 "Engine exited with code 0 on single-item database configuration"
+    Assert-True ($res7.StdOut -match "Execution Order: databases -> dotfiles") "Execution order generated correctly"
+    Assert-True ($res7.StdOut -match "Evaluating 1 database client\(s\) and toolchain\(s\)") "Evaluates exactly 1 database client"
+    Assert-True ($res7.StdOut -match "SQLite\.SQLite.*(Already installed|CLI tool present|Would install)") "Processes SQLite.SQLite safely without pipeline unrolling crash"
+    Assert-True ($res7.StdOut -match "\[FAIL\] Failed\s+:\s+0") "Execution summary reports 0 failures"
+    Assert-True ($res7.StdOut -match "All modules processed successfully") "All modules completed successfully"
+    Assert-True ($res7.StdOut -notmatch "PropertyNotFoundException") "Zero PropertyNotFoundException in stdout"
+    Assert-True ($res7.StdOut -notmatch "Module execution failed") "Zero module execution failures in stdout"
+} finally {
+    if (Test-Path $tmpYaml) {
+        Remove-Item -Path $tmpYaml -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# ------------------------------------------------------------------------------
 # Final Test Summary
 # ------------------------------------------------------------------------------
 Write-Host ""
