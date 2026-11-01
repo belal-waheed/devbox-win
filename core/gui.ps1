@@ -109,7 +109,7 @@ $xaml = @"
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="DEVBOX-WIN" FontSize="18" FontWeight="Black" Foreground="#cba6f7" VerticalAlignment="Center"/>
                             <Border Background="#252538" BorderBrush="#89b4fa" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="v1.3.2" FontSize="11" FontWeight="Bold" Foreground="#89b4fa"/>
+                                <TextBlock Text="v1.3.6" FontSize="11" FontWeight="Bold" Foreground="#89b4fa"/>
                             </Border>
                         </StackPanel>
                         <TextBlock Text="Windows 11 Developer Utility" FontSize="11" Foreground="#a6adc8" Margin="0,4,0,0"/>
@@ -1240,6 +1240,21 @@ function Update-PackageInstallBadges {
             $installedSet -contains $entry.PackageId
         }
 
+        # Font registry check for card_nerdfont / JetBrainsMono
+        if (-not $isInstalled -and ($entry.Card -eq $card_nerdfont -or $entry.PackageId -eq "DEVCOM.JetBrainsMonoNerdFont")) {
+            $hklm = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts' -ErrorAction SilentlyContinue
+            $hkcu = Get-ItemProperty 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts' -ErrorAction SilentlyContinue
+            $fontNames = @()
+            if ($hklm) { $fontNames += $hklm.PSObject.Properties.Name }
+            if ($hkcu) { $fontNames += $hkcu.PSObject.Properties.Name }
+            foreach ($fn in $fontNames) {
+                if (($fn -replace '\s+', '').ToLower() -match 'jetbrainsmono') {
+                    $isInstalled = $true
+                    break
+                }
+            }
+        }
+
         $entry.IsInstalled = [bool]$isInstalled
 
         if ($isInstalled) {
@@ -1532,7 +1547,6 @@ function Get-CompiledConfigFromUI {
     if ($chk_neovim.IsChecked)   { $packages.Add("Neovim.Neovim") }
     if ($chk_terminal.IsChecked) { $packages.Add("Microsoft.WindowsTerminal") }
     if ($chk_starship.IsChecked) { $packages.Add("Starship.Starship") }
-    if ($chk_nerdfont.IsChecked) { $packages.Add("DEVCOM.JetBrainsMonoNerdFont") }
     if ($chk_git.IsChecked)      { $packages.Add("Git.Git") }
     if ($chk_gh.IsChecked)       { $packages.Add("GitHub.cli") }
     if ($chk_7zip.IsChecked)     { $packages.Add("7zip.7zip") }
@@ -1592,6 +1606,7 @@ function Get-CompiledConfigFromUI {
             dotfiles    = [bool]$chk_dotfiles.IsChecked
         }
         packages = @($packages)
+        fonts = if ($chk_nerdfont.IsChecked) { @("JetBrainsMono") } else { @() }
         databases = @($databases)
         community_modules = @($commModules)
         editor = [ordered]@{

@@ -72,6 +72,63 @@ if (Test-Path $lifecyclePath) {
     }
 }
 
+# WinGet Network Optimization Manager
+$stateScript = if ($PSScriptRoot) { Join-Path $PSScriptRoot "core\state.ps1" } else { Join-Path $HOME ".devbox-win\repo\core\state.ps1" }
+if (Test-Path $stateScript) {
+    . $stateScript
+}
+if (-not (Get-Command "Optimize-DevboxWingetNetwork" -ErrorAction SilentlyContinue)) {
+    function Optimize-DevboxWingetNetwork {
+        [CmdletBinding()]
+        param([string]$SettingsPath = "")
+        try {
+            if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
+                $localApp = $env:LOCALAPPDATA
+                if ([string]::IsNullOrWhiteSpace($localApp)) {
+                    $localApp = [System.IO.Path]::Combine($HOME, "AppData\Local")
+                }
+                $targetDir = [System.IO.Path]::Combine($localApp, "Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState")
+                $SettingsPath = [System.IO.Path]::Combine($targetDir, "settings.json")
+            } else {
+                $targetDir = [System.IO.Path]::GetDirectoryName($SettingsPath)
+            }
+            if (-not [string]::IsNullOrWhiteSpace($targetDir) -and -not (Test-Path $targetDir)) {
+                New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+            }
+            $settings = [ordered]@{}
+            if (Test-Path $SettingsPath) {
+                try {
+                    $raw = Get-Content -Path $SettingsPath -Raw -Encoding utf8
+                    if (-not [string]::IsNullOrWhiteSpace($raw)) {
+                        $parsed = $raw | ConvertFrom-Json -AsHashtable
+                        if ($parsed -is [System.Collections.IDictionary]) {
+                            foreach ($k in $parsed.Keys) { $settings[$k] = $parsed[$k] }
+                        }
+                    }
+                } catch { $settings = [ordered]@{} }
+            }
+            $needsWrite = $true
+            if ($settings.Contains("network")) {
+                $existingNet = $settings["network"]
+                if ($existingNet -is [System.Collections.IDictionary] -and $existingNet.Contains("downloader") -and $existingNet["downloader"] -eq "wininet") {
+                    $needsWrite = $false
+                }
+            }
+            if ($needsWrite) {
+                $netMap = [ordered]@{}
+                if ($settings.Contains("network") -and ($settings["network"] -is [System.Collections.IDictionary])) {
+                    foreach ($k in $settings["network"].Keys) { $netMap[$k] = $settings["network"][$k] }
+                }
+                $netMap["downloader"] = "wininet"
+                $settings["network"] = $netMap
+                $json = $settings | ConvertTo-Json -Depth 10
+                Set-Content -Path $SettingsPath -Value $json -Encoding utf8
+            }
+            return $true
+        } catch { return $false }
+    }
+}
+
 # ANSI Color Codes
 $C_Reset   = "`e[0m"
 $C_Bold    = "`e[1m"
@@ -142,7 +199,8 @@ if (-not $wingetCmd) {
     $null = Complete-DevboxSession -ExitCode 1
     return
 }
-Write-BootOk "Package manager: winget is available"
+Optimize-DevboxWingetNetwork | Out-Null
+Write-BootOk "Package manager: winget is available (Network engine: wininet)"
 
 # 4. PowerShell 7+ Verification and Respawner
 $psMajor = $PSVersionTable.PSVersion.Major

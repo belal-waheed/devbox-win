@@ -756,7 +756,65 @@ $cfgNonDict = @{ runtimes = $false }
 $resNonDict = & $rtScript -Config $cfgNonDict -DryRun
 Assert-True ($resNonDict.Status -eq "SKIP") "Runtimes module handles non-dictionary runtimes boolean with SKIP"
 
-# Test 24: PowerShell AST Syntax Validation
+# Test 24: WinGet Network Optimization & Settings Resilience
+Write-DevboxSection "Test: WinGet Network Optimization & Settings Resilience"
+
+$testSettingsDir = Join-Path $env:TEMP ("devbox_test_winget_" + [System.Guid]::NewGuid().ToString("N"))
+$testSettingsFile = Join-Path $testSettingsDir "settings.json"
+
+try {
+    # 1. Fresh file creation with wininet
+    $optRes1 = Optimize-DevboxWingetNetwork -SettingsPath $testSettingsFile
+    Assert-True ($optRes1 -eq $true) "Optimize-DevboxWingetNetwork succeeds on missing settings file"
+    Assert-True (Test-Path $testSettingsFile) "Optimize-DevboxWingetNetwork creates settings.json on disk"
+
+    $rawContent1 = Get-Content -Path $testSettingsFile -Raw -Encoding utf8
+    $jsonObj1 = $rawContent1 | ConvertFrom-Json -AsHashtable
+    Assert-True ($null -ne $jsonObj1["network"]) "settings.json contains network object"
+    Assert-True ($jsonObj1["network"]["downloader"] -eq "wininet") "settings.json downloader is configured as wininet"
+
+    # 2. Key preservation and deep merging
+    $testMergeFile = Join-Path $testSettingsDir "settings_merge.json"
+    $preExistingConfig = [ordered]@{
+        "experimentalFeatures" = [ordered]@{ "directMSI" = $true }
+        "network" = [ordered]@{ "customSetting" = "preservedValue" }
+        "telemetry" = [ordered]@{ "disable" = $true }
+    }
+    $preJson = $preExistingConfig | ConvertTo-Json -Depth 10
+    Set-Content -Path $testMergeFile -Value $preJson -Encoding utf8
+
+    $optRes2 = Optimize-DevboxWingetNetwork -SettingsPath $testMergeFile
+    Assert-True ($optRes2 -eq $true) "Optimize-DevboxWingetNetwork succeeds on existing settings file"
+
+    $rawContent2 = Get-Content -Path $testMergeFile -Raw -Encoding utf8
+    $jsonObj2 = $rawContent2 | ConvertFrom-Json -AsHashtable
+    Assert-True ($jsonObj2["network"]["downloader"] -eq "wininet") "Merged settings has network.downloader set to wininet"
+    Assert-True ($jsonObj2["network"]["customSetting"] -eq "preservedValue") "Merged settings preserves existing network child properties"
+    Assert-True ($jsonObj2["experimentalFeatures"]["directMSI"] -eq $true) "Merged settings preserves existing top-level experimentalFeatures"
+    Assert-True ($jsonObj2["telemetry"]["disable"] -eq $true) "Merged settings preserves existing telemetry properties"
+
+    # 3. Idempotency check: invoking again produces same valid structure
+    $optRes3 = Optimize-DevboxWingetNetwork -SettingsPath $testMergeFile
+    Assert-True ($optRes3 -eq $true) "Optimize-DevboxWingetNetwork is idempotent on repeated execution"
+
+    # 4. Font registry check recognizes registered fonts vs uninstalled
+    $isJetBrainsInstalled = Test-DevboxWingetPackageInstalled -PackageId "DEVCOM.JetBrainsMonoNerdFont"
+    Assert-True ($isJetBrainsInstalled -eq $true) "Font registry check recognizes registered JetBrainsMono font"
+
+    $isFakeFontInstalled = Test-DevboxWingetPackageInstalled -PackageId "DEVCOM.NonExistentMockFont999NerdFont"
+    Assert-True ($isFakeFontInstalled -eq $false) "Font registry check returns false for unregistered font"
+
+    # 5. Initialize-DevboxPackageCache invokes network optimization and returns package set
+    $pkgCache = Initialize-DevboxPackageCache
+    Assert-True ($null -ne $pkgCache) "Initialize-DevboxPackageCache executes and returns package set"
+} finally {
+    if (Test-Path $testSettingsDir) {
+        Remove-Item -Path $testSettingsDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# Test 25: PowerShell AST Syntax Validation
+Write-DevboxSection "Test: PowerShell AST Syntax Validation"
 $allScripts = Get-ChildItem -Path $projectRoot -Filter "*.ps1" -Recurse
 foreach ($s in $allScripts) {
     $tokens = $null

@@ -67,10 +67,86 @@ function Save-DevboxState {
     Move-Item -Path $tmpPath -Destination $statePath -Force
 }
 
+function Optimize-DevboxWingetNetwork {
+    [CmdletBinding()]
+    param(
+        [string]$SettingsPath = ""
+    )
+
+    try {
+        if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
+            $localApp = $env:LOCALAPPDATA
+            if ([string]::IsNullOrWhiteSpace($localApp)) {
+                $localApp = [System.IO.Path]::Combine($HOME, "AppData\Local")
+            }
+            $targetDir = [System.IO.Path]::Combine($localApp, "Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState")
+            $SettingsPath = [System.IO.Path]::Combine($targetDir, "settings.json")
+        } else {
+            $targetDir = [System.IO.Path]::GetDirectoryName($SettingsPath)
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($targetDir) -and -not (Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+        }
+
+        $settings = [ordered]@{}
+        if (Test-Path $SettingsPath) {
+            try {
+                $raw = Get-Content -Path $SettingsPath -Raw -Encoding utf8
+                if (-not [string]::IsNullOrWhiteSpace($raw)) {
+                    $parsed = $raw | ConvertFrom-Json -AsHashtable
+                    if ($parsed -is [System.Collections.IDictionary]) {
+                        foreach ($k in $parsed.Keys) {
+                            $settings[$k] = $parsed[$k]
+                        }
+                    }
+                }
+            } catch {
+                $settings = [ordered]@{}
+            }
+        }
+
+        $needsWrite = $true
+        if ($settings.Contains("network")) {
+            $existingNet = $settings["network"]
+            if ($existingNet -is [System.Collections.IDictionary] -and $existingNet.Contains("downloader") -and $existingNet["downloader"] -eq "wininet") {
+                $needsWrite = $false
+            }
+        }
+
+        if ($needsWrite) {
+            $netMap = [ordered]@{}
+            if ($settings.Contains("network") -and ($settings["network"] -is [System.Collections.IDictionary])) {
+                foreach ($k in $settings["network"].Keys) {
+                    $netMap[$k] = $settings["network"][$k]
+                }
+            }
+            $netMap["downloader"] = "wininet"
+            $settings["network"] = $netMap
+
+            $json = $settings | ConvertTo-Json -Depth 10
+            Set-Content -Path $SettingsPath -Value $json -Encoding utf8
+        }
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 $global:DevboxInstalledPackageCache = $null
+
+function Initialize-DevboxPackageCache {
+    [CmdletBinding()]
+    param([switch]$ForceRefresh)
+
+    Optimize-DevboxWingetNetwork | Out-Null
+    return Get-DevboxInstalledPackageSet -ForceRefresh:$ForceRefresh
+}
 
 function Get-DevboxInstalledPackageSet {
     param([switch]$ForceRefresh)
+
+    Optimize-DevboxWingetNetwork | Out-Null
 
     if ($null -ne $global:DevboxInstalledPackageCache -and (-not $ForceRefresh)) {
         return ,$global:DevboxInstalledPackageCache
@@ -103,11 +179,55 @@ function Get-DevboxInstalledPackageSet {
     return ,$set
 }
 
-function Test-DevboxPackageInstalledFast {
+function Test-DevboxWingetPackageInstalled {
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)][string]$PackageId,
         [switch]$CheckCliFallback
     )
+
+    # Font registry fallback check: recognize installed fonts even if winget didn't record them
+    $fontCandidate = $null
+    $fontMapping = @{
+        "DEVCOM.JetBrainsMonoNerdFont" = "JetBrainsMono"
+        "DEVCOM.FiraCodeNerdFont"       = "FiraCode"
+        "Microsoft.CascadiaCode"        = "CascadiaCode"
+    }
+
+    if ($fontMapping.ContainsKey($PackageId)) {
+        $fontCandidate = $fontMapping[$PackageId]
+    } elseif ($PackageId -match 'DEVCOM\.(.+?)NerdFont') {
+        $fontCandidate = $Matches[1]
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($fontCandidate)) {
+        $hklm = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts' -ErrorAction SilentlyContinue
+        $hkcu = Get-ItemProperty 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts' -ErrorAction SilentlyContinue
+
+        $fontNames = @()
+        if ($hklm) { $fontNames += $hklm.PSObject.Properties.Name }
+        if ($hkcu) { $fontNames += $hkcu.PSObject.Properties.Name }
+
+        $cleanTarget = ($fontCandidate -replace '\s+', '').ToLower()
+        foreach ($fn in $fontNames) {
+            $cleanInstalled = ($fn -replace '\s+', '').ToLower()
+            if ($cleanInstalled -match $cleanTarget) {
+                return $true
+            }
+        }
+
+        # Check local appdata fonts directory
+        $localApp = $env:LOCALAPPDATA
+        if (-not [string]::IsNullOrWhiteSpace($localApp)) {
+            $userFontsDir = Join-Path $localApp "Microsoft\Windows\Fonts"
+            if (Test-Path $userFontsDir) {
+                $matching = @(Get-ChildItem -Path $userFontsDir -Filter "*$fontCandidate*" -ErrorAction SilentlyContinue)
+                if ($matching.Count -gt 0) {
+                    return $true
+                }
+            }
+        }
+    }
 
     $set = Get-DevboxInstalledPackageSet
     if ($set -is [System.Collections.Generic.HashSet[string]]) {
@@ -135,6 +255,15 @@ function Test-DevboxPackageInstalledFast {
     return $false
 }
 
+function Test-DevboxPackageInstalledFast {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$PackageId,
+        [switch]$CheckCliFallback
+    )
+    return Test-DevboxWingetPackageInstalled -PackageId $PackageId -CheckCliFallback:$CheckCliFallback
+}
+
 function Get-DevboxCustomInstallLocation {
     param([System.Collections.IDictionary]$Config)
 
@@ -160,12 +289,14 @@ function Install-DevboxWingetPackage {
         [Parameter(Mandatory = $true)]
         [string]$PackageId,
         [string]$Location = "",
-        [int]$TimeoutSeconds = 180,
+        [int]$TimeoutSeconds = 600,
         [hashtable]$Manifest = $null,
         [switch]$DryRun
     )
 
-    if (Test-DevboxPackageInstalledFast -PackageId $PackageId) {
+    Optimize-DevboxWingetNetwork | Out-Null
+
+    if (Test-DevboxWingetPackageInstalled -PackageId $PackageId) {
         if (Get-Command "Write-DevboxSkip" -ErrorAction SilentlyContinue) {
             Write-DevboxSkip $PackageId "Already installed"
         }

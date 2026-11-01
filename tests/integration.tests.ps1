@@ -308,6 +308,37 @@ try {
 }
 
 # ------------------------------------------------------------------------------
+# Test 9: WinGet Network Optimization Verification
+# ------------------------------------------------------------------------------
+Write-DevboxSection "Test 9: WinGet Network Optimization Verification"
+
+$cmd9 = "& '$bootstrapPath' -Preset minimal -DryRun -NonInteractive"
+$res9 = Invoke-SubprocessCapture -FilePath "pwsh.exe" -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $cmd9)
+
+Assert-Equal $res9.ExitCode 0 "Bootstrap with network optimization exited with code 0"
+Assert-True ($res9.StdOut -match "Package manager: winget is available \(Network engine: wininet\)") "StdOut confirms winget verified with wininet network optimization"
+
+$hostSettingsPath = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json"
+Assert-True (Test-Path $hostSettingsPath) "Host winget settings.json exists"
+if (Test-Path $hostSettingsPath) {
+    $rawHostSettings = Get-Content -Path $hostSettingsPath -Raw -Encoding utf8
+    $parsedHostSettings = $rawHostSettings | ConvertFrom-Json -AsHashtable
+    Assert-True ($parsedHostSettings["network"]["downloader"] -eq "wininet") "Host winget settings has network.downloader configured as wininet"
+}
+
+# Verify engine dry-run directly executes with wininet optimization active
+$engineScriptPath = Join-Path $repoRoot "core\engine.ps1"
+$res9Engine = Invoke-SubprocessCapture -FilePath "pwsh.exe" -ArgumentList @(
+    "-NoProfile",
+    "-ExecutionPolicy", "Bypass",
+    "-File", $engineScriptPath,
+    "-Preset", "minimal",
+    "-DryRun"
+)
+Assert-Equal $res9Engine.ExitCode 0 "Engine executes successfully with wininet active"
+Assert-True ($res9Engine.StdOut -match "All modules processed successfully") "Engine dry-run completes all modules without failure"
+
+# ------------------------------------------------------------------------------
 # Final Test Summary
 # ------------------------------------------------------------------------------
 Write-Host ""
