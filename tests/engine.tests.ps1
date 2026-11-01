@@ -484,7 +484,138 @@ Assert-True ($bootCmd.Parameters.ContainsKey("InstallLocation")) "bootstrap.ps1 
 $engineDryOutput = & pwsh -NoProfile -File (Join-Path $projectRoot "core\engine.ps1") -ConfigFile (Join-Path $projectRoot "config.example.yaml") -InstallLocation "E:\EngineCustomPath" -Module "packages" -DryRun 2>&1 | Out-String
 Assert-True ($engineDryOutput -match "DRY RUN MODE ENABLED") "Engine executes with -InstallLocation in dry-run mode"
 
-# Test 20: PowerShell AST Syntax Validation
+# Test 20: Manifest Safe Operations and Type Resilience
+Write-DevboxSection "Test: Manifest Safe Operations and Type Resilience"
+
+$realManifestPath = Get-DevboxManifestPath
+$originalManifestContent = $null
+if (Test-Path $realManifestPath) {
+    $originalManifestContent = Get-Content -Path $realManifestPath -Raw -Encoding utf8
+}
+
+try {
+    # Initialize a test manifest with object[] arrays simulating deserialized JSON
+    $testManifest = [ordered]@{
+        schemaVersion = "1.0.0"
+        createdAt     = (Get-Date -Format "o")
+        updatedAt     = (Get-Date -Format "o")
+        symlinks      = [object[]]@()
+        packages      = [object[]]@("Git.Git", "Microsoft.WindowsTerminal")
+        envvars       = [object[]]@(
+            [ordered]@{ name = "EXISTING_VAR"; previousValue = "old"; timestamp = "2026-01-01" }
+        )
+        shortcuts     = [object[]]@("C:\Users\test\Desktop\existing.lnk")
+    }
+
+    # Verify Add-DevboxManifestPackage records package without constructor overload error
+    $pkgAddError = $null
+    try {
+        Add-DevboxManifestPackage -Manifest $testManifest -PackageId "Zed.Zed"
+    } catch {
+        $pkgAddError = $_.Exception.Message
+    }
+    Assert-True ($null -eq $pkgAddError) "Add-DevboxManifestPackage adds package without constructor error in PS7"
+    Assert-True ($testManifest["packages"] -contains "Zed.Zed") "Manifest packages collection contains added package"
+
+    # Verify idempotency (duplicate prevention)
+    Add-DevboxManifestPackage -Manifest $testManifest -PackageId "Zed.Zed"
+    $zedCount = @($testManifest["packages"] | Where-Object { $_ -eq "Zed.Zed" }).Count
+    Assert-True ($zedCount -eq 1) "Add-DevboxManifestPackage prevents duplicate package IDs"
+
+    # Verify Add-DevboxManifestShortcut
+    $scAddError = $null
+    try {
+        Add-DevboxManifestShortcut -Manifest $testManifest -Path "C:\Users\test\Desktop\new.lnk"
+    } catch {
+        $scAddError = $_.Exception.Message
+    }
+    Assert-True ($null -eq $scAddError) "Add-DevboxManifestShortcut adds shortcut without constructor error"
+    Assert-True ($testManifest["shortcuts"] -contains "C:\Users\test\Desktop\new.lnk") "Manifest shortcuts collection contains added shortcut"
+
+    # Verify Add-DevboxManifestShortcut idempotency
+    Add-DevboxManifestShortcut -Manifest $testManifest -Path "C:\Users\test\Desktop\new.lnk"
+    $scCount = @($testManifest["shortcuts"] | Where-Object { $_ -eq "C:\Users\test\Desktop\new.lnk" }).Count
+    Assert-True ($scCount -eq 1) "Add-DevboxManifestShortcut prevents duplicate shortcut paths"
+
+    # Verify Add-DevboxManifestEnvVar
+    $envAddError = $null
+    try {
+        Add-DevboxManifestEnvVar -Manifest $testManifest -Name "DEVBOX_TEST_ENV" -PreviousValue "previous_val"
+    } catch {
+        $envAddError = $_.Exception.Message
+    }
+    Assert-True ($null -eq $envAddError) "Add-DevboxManifestEnvVar adds env var safely"
+    $matchingEnv = @($testManifest["envvars"] | Where-Object { $_.name -eq "DEVBOX_TEST_ENV" })
+    Assert-True ($matchingEnv.Count -eq 1) "Manifest envvars contains new environment variable"
+    Assert-True ($matchingEnv[0].previousValue -eq "previous_val") "Manifest envvars records previousValue"
+
+    # Verify Add-DevboxManifestEnvVar updates existing name without duplicating
+    Add-DevboxManifestEnvVar -Manifest $testManifest -Name "DEVBOX_TEST_ENV" -PreviousValue "updated_val"
+    $matchingEnvAfter = @($testManifest["envvars"] | Where-Object { $_.name -eq "DEVBOX_TEST_ENV" })
+    Assert-True ($matchingEnvAfter.Count -eq 1) "Add-DevboxManifestEnvVar replaces existing envvar entry"
+    Assert-True ($matchingEnvAfter[0].previousValue -eq "updated_val") "Updated envvar entry contains latest value"
+
+    # Verify Add-DevboxManifestSymlink safe operations
+    $symAddError = $null
+    try {
+        Add-DevboxManifestSymlink -Manifest $testManifest -Destination "C:\dst\file.txt" -Source "D:\src\file.txt" -BackupPath "C:\bak\file.txt"
+    } catch {
+        $symAddError = $_.Exception.Message
+    }
+    Assert-True ($null -eq $symAddError) "Add-DevboxManifestSymlink adds symlink entry safely"
+    $matchingSym = @($testManifest["symlinks"] | Where-Object { $_.destination -eq "C:\dst\file.txt" })
+    Assert-True ($matchingSym.Count -eq 1) "Manifest symlinks contains new symlink"
+} finally {
+    # Restore original manifest content if it existed
+    if ($null -ne $originalManifestContent) {
+        Set-Content -Path $realManifestPath -Value $originalManifestContent -Encoding utf8
+    }
+}
+
+# Test 21: Bootstrap GUI Launch Decision Logic
+Write-DevboxSection "Test: Bootstrap GUI Launch Decision Logic"
+
+# Helper reproducing bootstrap.ps1 decision formula exactly:
+function Test-BootstrapGuiCondition {
+    param(
+        [bool]$UserInteractive,
+        [bool]$NonInteractive,
+        [bool]$Silent,
+        [bool]$GuiScriptExists,
+        [bool]$IsCliMaintenance,
+        [int]$EngineParamsCount,
+        [bool]$Gui,
+        [string]$Preset
+    )
+    $isInteractiveCLI = (-not $NonInteractive) -and (-not $Silent) -and $UserInteractive
+    return [bool]($isInteractiveCLI -and $GuiScriptExists -and (-not $IsCliMaintenance) -and (($EngineParamsCount -eq 0) -or $Gui -or ($Preset -and -not $NonInteractive)))
+}
+
+# 1. Interactive session with -Preset launches GUI
+$dec1 = Test-BootstrapGuiCondition -UserInteractive $true -NonInteractive $false -Silent $false -GuiScriptExists $true -IsCliMaintenance $false -EngineParamsCount 1 -Gui $false -Preset "minimal"
+Assert-True ($dec1 -eq $true) "Interactive session with -Preset launches GUI"
+
+# 2. Interactive session with -Preset and -NonInteractive bypasses GUI
+$dec2 = Test-BootstrapGuiCondition -UserInteractive $true -NonInteractive $true -Silent $false -GuiScriptExists $true -IsCliMaintenance $false -EngineParamsCount 1 -Gui $false -Preset "minimal"
+Assert-True ($dec2 -eq $false) "Session with -Preset and -NonInteractive bypasses GUI"
+
+# 3. Interactive session with -Preset and -Silent bypasses GUI
+$dec3 = Test-BootstrapGuiCondition -UserInteractive $true -NonInteractive $false -Silent $true -GuiScriptExists $true -IsCliMaintenance $false -EngineParamsCount 1 -Gui $false -Preset "minimal"
+Assert-True ($dec3 -eq $false) "Session with -Preset and -Silent bypasses GUI"
+
+# 4. Non-interactive console (UserInteractive = false) bypasses GUI
+$dec4 = Test-BootstrapGuiCondition -UserInteractive $false -NonInteractive $false -Silent $false -GuiScriptExists $true -IsCliMaintenance $false -EngineParamsCount 1 -Gui $false -Preset "minimal"
+Assert-True ($dec4 -eq $false) "Non-interactive host with -Preset bypasses GUI"
+
+# 5. Interactive session with maintenance command (-Doctor) bypasses GUI
+$dec5 = Test-BootstrapGuiCondition -UserInteractive $true -NonInteractive $false -Silent $false -GuiScriptExists $true -IsCliMaintenance $true -EngineParamsCount 1 -Gui $false -Preset "minimal"
+Assert-True ($dec5 -eq $false) "Interactive session with CLI maintenance command bypasses GUI"
+
+# 6. Interactive session with zero arguments launches GUI
+$dec6 = Test-BootstrapGuiCondition -UserInteractive $true -NonInteractive $false -Silent $false -GuiScriptExists $true -IsCliMaintenance $false -EngineParamsCount 0 -Gui $false -Preset ""
+Assert-True ($dec6 -eq $true) "Interactive session with zero arguments launches GUI"
+
+# Test 22: PowerShell AST Syntax Validation
 $allScripts = Get-ChildItem -Path $projectRoot -Filter "*.ps1" -Recurse
 foreach ($s in $allScripts) {
     $tokens = $null

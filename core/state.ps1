@@ -261,7 +261,7 @@ function Install-DevboxWingetPackage {
     $exitCode = $execRes.ExitCode
 
     # If user-scope was attempted but failed because scope is unsupported, retry without --scope user
-    if ($attemptedUserScope -and ($exitCode -eq -1978335178 -or $exitCode -eq [int]0x8a150036 -or $exitCode -eq -1978335212)) {
+    if ($attemptedUserScope -and ($exitCode -eq -1978335178 -or $exitCode -eq [int]0x8a150036 -or $exitCode -eq -1978335212 -or $exitCode -eq -1978335216 -or $exitCode -eq [int]0x8a150010)) {
         if (Get-Command "Write-DevboxWarn" -ErrorAction SilentlyContinue) {
             Write-DevboxWarn "Package '$PackageId' does not support user scope. Attempting default scope..."
         }

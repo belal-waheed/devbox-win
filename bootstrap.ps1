@@ -338,7 +338,11 @@ if ($Help)       { $engineParams["Help"] = $true }
 Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
 
 $guiScript = Join-Path $workDir "core\gui.ps1"
-if ([System.Windows.Forms.SystemInformation]::UserInteractive -and (Test-Path $guiScript) -and (($engineParams.Count -eq 0) -or $Gui) -and (-not $NonInteractive) -and (-not $Silent)) {
+$isInteractiveCLI = (-not $NonInteractive) -and (-not $Silent) -and [System.Windows.Forms.SystemInformation]::UserInteractive
+$isCliMaintenance = ($Doctor -or $Export -or $Backup -or $Restore -or $Sync -or $Push -or $Pull -or $Uninstall -or $UninstallPackages -or $Marketplace -or $ListModules -or $Dashboard -or $Wizard -or $ConfigFile)
+$shouldLaunchGui = $isInteractiveCLI -and (Test-Path $guiScript) -and (-not $isCliMaintenance) -and (($engineParams.Count -eq 0) -or $Gui -or ($Preset -and -not $NonInteractive))
+
+if ($shouldLaunchGui) {
     Write-BootInfo "Launching devbox-win Windows Developer Utility (GUI)..."
     $guiPreset = if ($Preset) { $Preset } else { "" }
     $guiResult = & $guiScript -RepoRoot $workDir -Preset $guiPreset

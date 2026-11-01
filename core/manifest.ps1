@@ -63,11 +63,14 @@ function Add-DevboxManifestSymlink {
         [string]$BackupPath = $null
     )
 
-    $symlinks = [System.Collections.Generic.List[object]]::new(@($Manifest["symlinks"]))
-    $filtered = @($symlinks | Where-Object { $_.destination -ne $Destination })
-    $symlinks = [System.Collections.Generic.List[object]]::new($filtered)
+    $symlinks = [System.Collections.Generic.List[object]]::new()
+    if ($Manifest.Contains("symlinks") -and ($null -ne $Manifest["symlinks"])) {
+        foreach ($s in $Manifest["symlinks"]) {
+            if ($null -ne $s -and $s.destination -ne $Destination) { [void]$symlinks.Add($s) }
+        }
+    }
 
-    $symlinks.Add([ordered]@{
+    [void]$symlinks.Add([ordered]@{
         destination = $Destination
         source      = $Source
         backupPath  = $BackupPath
@@ -84,9 +87,14 @@ function Add-DevboxManifestPackage {
         [string]$PackageId
     )
 
-    $pkgs = [System.Collections.Generic.List[string]]::new(@($Manifest["packages"]))
+    $pkgs = [System.Collections.Generic.List[string]]::new()
+    if ($Manifest.Contains("packages") -and ($null -ne $Manifest["packages"])) {
+        foreach ($p in $Manifest["packages"]) {
+            if ($p) { [void]$pkgs.Add($p.ToString()) }
+        }
+    }
     if (-not $pkgs.Contains($PackageId)) {
-        $pkgs.Add($PackageId)
+        [void]$pkgs.Add($PackageId)
         $Manifest["packages"] = @($pkgs)
         Save-DevboxManifest -Manifest $Manifest
     }
@@ -99,11 +107,14 @@ function Add-DevboxManifestEnvVar {
         [string]$PreviousValue = $null
     )
 
-    $vars = [System.Collections.Generic.List[object]]::new(@($Manifest["envvars"]))
-    $filtered = @($vars | Where-Object { $_.name -ne $Name })
-    $vars = [System.Collections.Generic.List[object]]::new($filtered)
+    $vars = [System.Collections.Generic.List[object]]::new()
+    if ($Manifest.Contains("envvars") -and ($null -ne $Manifest["envvars"])) {
+        foreach ($v in $Manifest["envvars"]) {
+            if ($null -ne $v -and $v.name -ne $Name) { [void]$vars.Add($v) }
+        }
+    }
 
-    $vars.Add([ordered]@{
+    [void]$vars.Add([ordered]@{
         name          = $Name
         previousValue = $PreviousValue
         timestamp     = (Get-Date -Format "o")
@@ -119,9 +130,14 @@ function Add-DevboxManifestShortcut {
         [string]$Path
     )
 
-    $shortcuts = [System.Collections.Generic.List[string]]::new(@(if ($Manifest.Contains("shortcuts")) { $Manifest["shortcuts"] } else { @() }))
+    $shortcuts = [System.Collections.Generic.List[string]]::new()
+    if ($Manifest.Contains("shortcuts") -and ($null -ne $Manifest["shortcuts"])) {
+        foreach ($s in $Manifest["shortcuts"]) {
+            if ($s) { [void]$shortcuts.Add($s.ToString()) }
+        }
+    }
     if (-not $shortcuts.Contains($Path)) {
-        $shortcuts.Add($Path)
+        [void]$shortcuts.Add($Path)
         $Manifest["shortcuts"] = @($shortcuts)
         Save-DevboxManifest -Manifest $Manifest
     }

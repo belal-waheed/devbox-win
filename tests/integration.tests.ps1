@@ -195,6 +195,17 @@ Assert-True ($res5.StdOut -match "Planned Execution DAG") "Preset execution gene
 Assert-True (-not $res5.Crashed) "Preset execution completed without crashing"
 
 # ------------------------------------------------------------------------------
+# Test 6: Bootstrap GUI Launch Decision & Headless Override Verification
+# ------------------------------------------------------------------------------
+Write-DevboxSection "Test 6: Bootstrap GUI Launch Decision & Headless Override Verification"
+$cmd6 = "& '$bootstrapPath' -Preset minimal -DryRun -NonInteractive"
+$res6 = Invoke-SubprocessCapture -FilePath "pwsh.exe" -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $cmd6)
+
+Assert-Equal $res6.ExitCode 0 "Bootstrap with -Preset and -NonInteractive exited with code 0"
+Assert-True ($res6.StdOut -match "Transferring execution to core engine") "StdOut confirms transfer to core engine headlessly"
+Assert-True ($res6.StdOut -notmatch "Launching devbox-win Windows Developer Utility \(GUI\)") "StdOut confirms GUI was bypassed under -NonInteractive"
+
+# ------------------------------------------------------------------------------
 # Final Test Summary
 # ------------------------------------------------------------------------------
 Write-Host ""
