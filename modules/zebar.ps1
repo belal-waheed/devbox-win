@@ -37,14 +37,17 @@ function Invoke-DevboxZebarModule {
         [switch]$DryRun
     )
 
-    $zebarConfig = if ($Config.Contains("zebar") -and ($null -ne $Config["zebar"])) {
-        $Config["zebar"]
-    } else {
-        @{}
-    }
+    $zebarRaw = if ($Config.Contains("zebar") -and ($null -ne $Config["zebar"])) { $Config["zebar"] } else { $null }
+    $zebarConfig = if ($zebarRaw -is [System.Collections.IDictionary]) { $zebarRaw } else { @{} }
 
-    $shouldInstall = if ($zebarConfig.Contains("install")) { [bool]$zebarConfig["install"] } else { $true }
-    $autostart     = if ($zebarConfig.Contains("autostart")) { [bool]$zebarConfig["autostart"] } else { $true }
+    $shouldInstall = if ($zebarRaw -is [bool]) {
+        $zebarRaw
+    } elseif ($zebarConfig.Contains("install") -and ($null -ne $zebarConfig["install"])) {
+        [bool]$zebarConfig["install"]
+    } else {
+        $true
+    }
+    $autostart = if ($zebarConfig.Contains("autostart") -and ($null -ne $zebarConfig["autostart"])) { [bool]$zebarConfig["autostart"] } else { $true }
 
     $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
     $manifest = Load-DevboxManifest

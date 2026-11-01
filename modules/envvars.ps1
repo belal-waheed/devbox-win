@@ -21,7 +21,7 @@ function Invoke-DevboxEnvvarsModule {
         [switch]$DryRun
     )
 
-    $envvars = if ($Config.Contains("envvars") -and ($null -ne $Config["envvars"])) {
+    $envvars = if ($Config.Contains("envvars") -and ($null -ne $Config["envvars"]) -and ($Config["envvars"] -is [System.Collections.IDictionary])) {
         $Config["envvars"]
     } else {
         $null

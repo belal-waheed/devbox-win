@@ -682,7 +682,81 @@ Assert-True ($rtResScalar.Status -in @("OK", "SKIP")) "Runtimes module handles s
 $rtResList = & $rtScript -Config @{ runtimes = @{ dotnet = @{ versions = @("9.0") } } } -DryRun
 Assert-True ($rtResList.Status -in @("OK", "SKIP")) "Runtimes module handles single-item .NET version array without error"
 
-# Test 23: PowerShell AST Syntax Validation
+# Test 23: Polymorphic Runtime Configuration Resilience
+Write-DevboxSection "Test: Polymorphic Runtime Configuration Resilience"
+
+$rtScript = Join-Path $projectRoot "modules\runtimes.ps1"
+
+# Scenario A: Pure boolean toggles (the exact GUI exported shape)
+$cfgBools = @{
+    runtimes = @{
+        git    = $true
+        node   = $true
+        python = $false
+        rust   = $false
+        dotnet = $false
+    }
+}
+$resBools = $null
+$boolError = $null
+try {
+    $resBools = & $rtScript -Config $cfgBools -DryRun
+} catch {
+    $boolError = $_.Exception.Message
+}
+Assert-True ($null -eq $boolError) "Runtimes module handles pure boolean map without exceptions"
+Assert-True ($resBools.Status -in @("OK", "SKIP")) "Boolean map execution produces valid status (Value: '$($resBools.Status)')"
+
+# Scenario B: Pure dictionary objects
+$cfgDicts = @{
+    runtimes = @{
+        git    = @{ install = $true }
+        node   = @{ manager = "nvm"; default_version = "lts" }
+        python = @{ manager = "pyenv-win"; default_version = "3.12" }
+        rust   = @{ install = $true }
+        dotnet = @{ versions = @("8.0", "9.0") }
+    }
+}
+$resDicts = $null
+$dictError = $null
+try {
+    $resDicts = & $rtScript -Config $cfgDicts -DryRun
+} catch {
+    $dictError = $_.Exception.Message
+}
+Assert-True ($null -eq $dictError) "Runtimes module handles dictionary configuration map without exceptions"
+Assert-True ($resDicts.Status -in @("OK", "SKIP")) "Dictionary map execution produces valid status (Value: '$($resDicts.Status)')"
+
+# Scenario C: Mixed map (booleans, dictionaries, and disabled entries)
+$cfgMixed = @{
+    runtimes = @{
+        git    = $true
+        node   = @{ manager = "fnm"; default_version = "20" }
+        python = $false
+        rust   = @{ install = $false }
+        dotnet = $true
+    }
+}
+$resMixed = $null
+$mixedError = $null
+try {
+    $resMixed = & $rtScript -Config $cfgMixed -DryRun
+} catch {
+    $mixedError = $_.Exception.Message
+}
+Assert-True ($null -eq $mixedError) "Runtimes module handles mixed boolean and dictionary map without exceptions"
+Assert-True ($resMixed.Status -in @("OK", "SKIP")) "Mixed map execution produces valid status (Value: '$($resMixed.Status)')"
+
+# Scenario D: Empty and non-dictionary runtime configurations
+$cfgEmpty = @{ runtimes = @{} }
+$resEmpty = & $rtScript -Config $cfgEmpty -DryRun
+Assert-True ($resEmpty.Status -eq "SKIP") "Runtimes module handles empty runtimes map with SKIP"
+
+$cfgNonDict = @{ runtimes = $false }
+$resNonDict = & $rtScript -Config $cfgNonDict -DryRun
+Assert-True ($resNonDict.Status -eq "SKIP") "Runtimes module handles non-dictionary runtimes boolean with SKIP"
+
+# Test 24: PowerShell AST Syntax Validation
 $allScripts = Get-ChildItem -Path $projectRoot -Filter "*.ps1" -Recurse
 foreach ($s in $allScripts) {
     $tokens = $null

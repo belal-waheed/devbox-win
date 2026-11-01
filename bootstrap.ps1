@@ -95,7 +95,8 @@ Write-Host "$C_Cyan$C_Bold======================================================
 $osBuild = [System.Environment]::OSVersion.Version.Build
 if ($osBuild -lt 22000) {
     Write-BootFail "Unsupported Operating System (Build $osBuild). devbox-win requires Windows 11 (Build 22000+)."
-    return (Complete-DevboxSession -ExitCode 1)
+    $null = Complete-DevboxSession -ExitCode 1
+    return
 }
 Write-BootOk "Operating System: Windows 11 (Build $osBuild)"
 
@@ -138,7 +139,8 @@ if (-not $SkipDevMode) {
 $wingetCmd = Get-Command "winget" -ErrorAction SilentlyContinue
 if (-not $wingetCmd) {
     Write-BootFail "winget is not available in PATH. Please install 'App Installer' from the Microsoft Store or update Windows."
-    return (Complete-DevboxSession -ExitCode 1)
+    $null = Complete-DevboxSession -ExitCode 1
+    return
 }
 Write-BootOk "Package manager: winget is available"
 
@@ -198,7 +200,8 @@ if ($psMajor -lt 7) {
 
         if (-not (Test-Path $scriptPath) -or ((Get-Item $scriptPath).Length -lt 1000)) {
             Write-BootFail "Verified bootstrap script not found or incomplete at: $scriptPath"
-            return (Complete-DevboxSession -ExitCode 1)
+            $null = Complete-DevboxSession -ExitCode 1
+            return
         }
 
         $argList = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $scriptPath)
@@ -239,10 +242,12 @@ if ($psMajor -lt 7) {
         $proc = Start-Process -FilePath $foundPwsh -ArgumentList $argList -Wait -PassThru -NoNewWindow
         $respawnExitCode = if ($null -ne $proc.ExitCode) { $proc.ExitCode } else { 0 }
         $global:LASTEXITCODE = $respawnExitCode
-        return (Complete-DevboxSession -ExitCode $respawnExitCode)
+        $null = Complete-DevboxSession -ExitCode $respawnExitCode
+        return
     } else {
         Write-BootFail "Failed to locate or install PowerShell 7. Please install it manually and re-run."
-        return (Complete-DevboxSession -ExitCode 1)
+        $null = Complete-DevboxSession -ExitCode 1
+        return
     }
 }
 Write-BootOk "Runtime: PowerShell $($PSVersionTable.PSVersion)"
@@ -297,7 +302,8 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "core\engine.ps1"))) 
 $engineScript = Join-Path $workDir "core\engine.ps1"
 if (-not (Test-Path $engineScript)) {
     Write-BootFail "Core engine not found at: $engineScript"
-    return (Complete-DevboxSession -ExitCode 1)
+    $null = Complete-DevboxSession -ExitCode 1
+    return
 }
 
 $workDirLifecycle = Join-Path $workDir "core\lifecycle.ps1"
@@ -350,17 +356,20 @@ if ($shouldLaunchGui) {
         if ($guiResult.Action -eq "Doctor") {
             $null = & $engineScript -Doctor
             $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
-            return (Complete-DevboxSession -ExitCode $exitCode)
+            $null = Complete-DevboxSession -ExitCode $exitCode
+            return
         }
         if ($guiResult.Action -eq "Backup") {
             $null = & $engineScript -Backup
             $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
-            return (Complete-DevboxSession -ExitCode $exitCode)
+            $null = Complete-DevboxSession -ExitCode $exitCode
+            return
         }
         if ($guiResult.Action -eq "Export") {
             $null = & $engineScript -Export
             $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
-            return (Complete-DevboxSession -ExitCode $exitCode)
+            $null = Complete-DevboxSession -ExitCode $exitCode
+            return
         }
         if ($guiResult.Action -in @("Install", "DryRun")) {
             . (Join-Path $workDir "core\config.ps1")
@@ -370,15 +379,18 @@ if ($shouldLaunchGui) {
             Write-BootInfo "Applying configuration from GUI selection..."
             $null = & $engineScript -ConfigFile $userConfigYaml -DryRun:$isDry
             $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
-            return (Complete-DevboxSession -ExitCode $exitCode)
+            $null = Complete-DevboxSession -ExitCode $exitCode
+            return
         }
     } else {
         Write-BootInfo "Devbox Windows Utility closed by user."
-        return (Complete-DevboxSession -ExitCode 0)
+        $null = Complete-DevboxSession -ExitCode 0
+        return
     }
 }
 
 Write-BootInfo "Transferring execution to core engine..."
 $null = & $engineScript @engineParams
 $exitCode = if ($null -ne $global:LASTEXITCODE) { $global:LASTEXITCODE } else { 0 }
-return (Complete-DevboxSession -ExitCode $exitCode)
+$null = Complete-DevboxSession -ExitCode $exitCode
+return

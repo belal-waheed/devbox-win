@@ -73,13 +73,13 @@ function Invoke-DevboxKeybindingsModule {
         [switch]$DryRun
     )
 
-    $keyConfig = if ($Config.Contains("keybindings") -and ($null -ne $Config["keybindings"])) {
+    $keyRaw = if ($Config.Contains("keybindings") -and ($null -ne $Config["keybindings"])) {
         $Config["keybindings"]
     } else {
         $null
     }
 
-    if ($null -eq $keyConfig) {
+    if ($null -eq $keyRaw -or ($keyRaw -is [bool] -and -not $keyRaw)) {
         Write-DevboxSkip "keybindings" "No keybindings configured"
         return [PSCustomObject]@{
             Status  = "SKIP"
@@ -87,15 +87,17 @@ function Invoke-DevboxKeybindingsModule {
         }
     }
 
+    $keyConfig = if ($keyRaw -is [System.Collections.IDictionary]) { $keyRaw } else { @{} }
+
     $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
     $manifest = Load-DevboxManifest
     $installedCount = 0
     $skippedCount   = 0
     $failedCount    = 0
 
-    $powertoysEnabled = if ($keyConfig.Contains("powertoys")) { [bool]$keyConfig["powertoys"] } else { $false }
-    $ahkEnabled       = if ($keyConfig.Contains("autohotkey")) { [bool]$keyConfig["autohotkey"] } else { $false }
-    $startupEnabled   = if ($keyConfig.Contains("startup_script")) { [bool]$keyConfig["startup_script"] } else { $ahkEnabled }
+    $powertoysEnabled = if ($keyConfig.Contains("powertoys") -and ($null -ne $keyConfig["powertoys"])) { [bool]$keyConfig["powertoys"] } else { $false }
+    $ahkEnabled       = if ($keyConfig.Contains("autohotkey") -and ($null -ne $keyConfig["autohotkey"])) { [bool]$keyConfig["autohotkey"] } else { if ($keyRaw -is [bool] -and $keyRaw) { $true } else { $false } }
+    $startupEnabled   = if ($keyConfig.Contains("startup_script") -and ($null -ne $keyConfig["startup_script"])) { [bool]$keyConfig["startup_script"] } else { $ahkEnabled }
 
     $installLoc = Get-DevboxCustomInstallLocation -Config $Config
 

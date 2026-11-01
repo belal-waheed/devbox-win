@@ -67,8 +67,8 @@ function Invoke-DevboxShellModule {
     }
 
     # 3. Prompt Configuration (Starship / Oh My Posh)
-    $shellConfig = if ($Config.Contains("shell") -and ($null -ne $Config["shell"])) { $Config["shell"] } else { @{} }
-    $promptType  = if ($shellConfig.Contains("prompt")) { $shellConfig["prompt"] } else { "starship" }
+    $shellConfig = if ($Config.Contains("shell") -and ($null -ne $Config["shell"]) -and ($Config["shell"] -is [System.Collections.IDictionary])) { $Config["shell"] } else { @{} }
+    $promptType  = if ($shellConfig.Contains("prompt") -and ($null -ne $shellConfig["prompt"])) { $shellConfig["prompt"] } else { "starship" }
 
     if ($promptType -eq "starship") {
         $starshipSource = Join-Path $repoRoot "dotfiles\starship\starship.toml"

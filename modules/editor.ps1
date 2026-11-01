@@ -38,9 +38,9 @@ function Invoke-DevboxEditorModule {
         [switch]$DryRun
     )
 
-    $editorConfig = if ($Config.Contains("editor") -and ($null -ne $Config["editor"])) { $Config["editor"] } else { @{} }
-    $syncSettings = if ($editorConfig.Contains("sync_settings")) { [bool]$editorConfig["sync_settings"] } else { $true }
-    $installExts  = if ($editorConfig.Contains("install_extensions")) { [bool]$editorConfig["install_extensions"] } else { $true }
+    $editorConfig = if ($Config.Contains("editor") -and ($null -ne $Config["editor"]) -and ($Config["editor"] -is [System.Collections.IDictionary])) { $Config["editor"] } else { @{} }
+    $syncSettings = if ($editorConfig.Contains("sync_settings") -and ($null -ne $editorConfig["sync_settings"])) { [bool]$editorConfig["sync_settings"] } else { $true }
+    $installExts  = if ($editorConfig.Contains("install_extensions") -and ($null -ne $editorConfig["install_extensions"])) { [bool]$editorConfig["install_extensions"] } else { $true }
 
     $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
     $manifest = Load-DevboxManifest

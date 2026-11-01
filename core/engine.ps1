@@ -383,7 +383,7 @@ if ($Module) {
     }
 } else {
     # Read enabled modules from config
-    $modConfig = if ($config.Contains("modules") -and ($null -ne $config["modules"])) { $config["modules"] } else { @{} }
+    $modConfig = if ($config.Contains("modules") -and ($null -ne $config["modules"]) -and ($config["modules"] -is [System.Collections.IDictionary])) { $config["modules"] } else { @{} }
     foreach ($key in $moduleRegistry.Keys) {
         $isEnabled = $true
         if ($modConfig.Contains($key)) {
@@ -508,7 +508,9 @@ Write-DevboxSummary -Results $results -Duration $startTime.Elapsed
 
 $hasFailures = @($results | Where-Object { $_.Status -eq "FAIL" }).Count -gt 0
 if ($hasFailures) {
-    return (Complete-DevboxSession -ExitCode 1)
+    $null = Complete-DevboxSession -ExitCode 1
+    return
 } else {
-    return (Complete-DevboxSession -ExitCode 0)
+    $null = Complete-DevboxSession -ExitCode 0
+    return
 }

@@ -109,14 +109,14 @@ function Invoke-DevboxGitModule {
         }
     }
 
-    $userName = if ($Config.Contains("user") -and $Config["user"].Contains("name")) { $Config["user"]["name"] } else { $null }
-    $userEmail = if ($Config.Contains("user") -and $Config["user"].Contains("email")) { $Config["user"]["email"] } else { $null }
+    $userName = if ($Config.Contains("user") -and ($null -ne $Config["user"]) -and ($Config["user"] -is [System.Collections.IDictionary]) -and $Config["user"].Contains("name")) { $Config["user"]["name"] } else { $null }
+    $userEmail = if ($Config.Contains("user") -and ($null -ne $Config["user"]) -and ($Config["user"] -is [System.Collections.IDictionary]) -and $Config["user"].Contains("email")) { $Config["user"]["email"] } else { $null }
 
-    $gitSection = if ($Config.Contains("git") -and ($null -ne $Config["git"])) { $Config["git"] } else { @{} }
-    $defaultBranch = if ($gitSection.Contains("default_branch")) { $gitSection["default_branch"] } else { "main" }
-    $autocrlf = if ($gitSection.Contains("autocrlf")) { $gitSection["autocrlf"] } else { "input" }
-    $genSsh = if ($gitSection.Contains("generate_ssh_key")) { [bool]$gitSection["generate_ssh_key"] } else { $true }
-    $sshKeyType = if ($gitSection.Contains("ssh_key_type")) { $gitSection["ssh_key_type"] } else { "ed25519" }
+    $gitSection = if ($Config.Contains("git") -and ($null -ne $Config["git"]) -and ($Config["git"] -is [System.Collections.IDictionary])) { $Config["git"] } else { @{} }
+    $defaultBranch = if ($gitSection.Contains("default_branch") -and ($null -ne $gitSection["default_branch"])) { $gitSection["default_branch"] } else { "main" }
+    $autocrlf = if ($gitSection.Contains("autocrlf") -and ($null -ne $gitSection["autocrlf"])) { $gitSection["autocrlf"] } else { "input" }
+    $genSsh = if ($gitSection.Contains("generate_ssh_key") -and ($null -ne $gitSection["generate_ssh_key"])) { [bool]$gitSection["generate_ssh_key"] } else { $true }
+    $sshKeyType = if ($gitSection.Contains("ssh_key_type") -and ($null -ne $gitSection["ssh_key_type"])) { $gitSection["ssh_key_type"] } else { "ed25519" }
 
     Write-DevboxInfo "Applying global Git configurations..."
     $userConfigFile = Join-Path $HOME ".gitconfig.user"

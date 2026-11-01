@@ -37,14 +37,17 @@ function Invoke-DevboxGlazewmModule {
         [switch]$DryRun
     )
 
-    $glazeConfig = if ($Config.Contains("glazewm") -and ($null -ne $Config["glazewm"])) {
-        $Config["glazewm"]
-    } else {
-        @{}
-    }
+    $glazeRaw = if ($Config.Contains("glazewm") -and ($null -ne $Config["glazewm"])) { $Config["glazewm"] } else { $null }
+    $glazeConfig = if ($glazeRaw -is [System.Collections.IDictionary]) { $glazeRaw } else { @{} }
 
-    $shouldInstall = if ($glazeConfig.Contains("install")) { [bool]$glazeConfig["install"] } else { $true }
-    $autostart     = if ($glazeConfig.Contains("autostart")) { [bool]$glazeConfig["autostart"] } else { $true }
+    $shouldInstall = if ($glazeRaw -is [bool]) {
+        $glazeRaw
+    } elseif ($glazeConfig.Contains("install") -and ($null -ne $glazeConfig["install"])) {
+        [bool]$glazeConfig["install"]
+    } else {
+        $true
+    }
+    $autostart = if ($glazeConfig.Contains("autostart") -and ($null -ne $glazeConfig["autostart"])) { [bool]$glazeConfig["autostart"] } else { $true }
 
     $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
     $manifest = Load-DevboxManifest

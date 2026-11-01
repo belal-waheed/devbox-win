@@ -255,6 +255,59 @@ try {
 }
 
 # ------------------------------------------------------------------------------
+# Test 8: Real End-to-End GUI Runtimes Blueprint Execution
+# ------------------------------------------------------------------------------
+Write-DevboxSection "Test 8: Real End-to-End GUI Runtimes Blueprint Execution"
+
+$tmpGuiYaml = Join-Path $env:TEMP ("devbox_gui_runtimes_blueprint_" + [System.Guid]::NewGuid().ToString("N") + ".yaml")
+$guiRuntimesConfig = @"
+modules:
+  fonts: false
+  envvars: false
+  git: false
+  shell: false
+  editor: false
+  packages: false
+  runtimes: true
+  databases: false
+  keybindings: false
+  glazewm: false
+  zebar: false
+  dotfiles: false
+runtimes:
+  git: false
+  node: true
+  python: false
+  rust: false
+  dotnet: false
+"@
+Set-Content -Path $tmpGuiYaml -Value $guiRuntimesConfig -Encoding utf8
+
+try {
+    $engineScriptPath = Join-Path $repoRoot "core\engine.ps1"
+    $res8 = Invoke-SubprocessCapture -FilePath "pwsh.exe" -ArgumentList @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $engineScriptPath,
+        "-ConfigFile", $tmpGuiYaml,
+        "-DryRun"
+    )
+
+    Assert-Equal $res8.ExitCode 0 "Engine exited with code 0 on GUI runtimes boolean blueprint"
+    Assert-True ($res8.StdOut -match "Execution Order: runtimes") "Execution order generated correctly"
+    Assert-True ($res8.StdOut -match "\[FAIL\] Failed\s+:\s+0") "Execution summary reports 0 failures"
+    Assert-True ($res8.StdOut -match "All modules processed successfully") "All modules completed successfully"
+    Assert-True ($res8.StdOut -notmatch "PropertyNotFoundException") "Zero PropertyNotFoundException in stdout"
+    Assert-True ($res8.StdOut -notmatch "MethodInvocationException") "Zero MethodInvocationException in stdout"
+    Assert-True ($res8.StdOut -notmatch "does not contain a method named 'Contains'") "Zero Contains method errors in stdout"
+    Assert-True ($res8.StdOut -notmatch "Module execution failed") "Zero module execution failures in stdout"
+} finally {
+    if (Test-Path $tmpGuiYaml) {
+        Remove-Item -Path $tmpGuiYaml -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# ------------------------------------------------------------------------------
 # Final Test Summary
 # ------------------------------------------------------------------------------
 Write-Host ""
