@@ -1,132 +1,87 @@
-# devbox-win: Complete LLM Technical Reference & Specification
+# devbox-win: Complete Specification & Agent Architecture Reference
 
-> Project: devbox-win  
-> Author: Belal Waheed  
-> Repository: https://github.com/belal-waheed/devbox-win  
-> Website: https://belal-waheed.github.io/devbox-win/  
-> Target Platform: Microsoft Windows 11 (Build 22000+)  
-> Shell: PowerShell 7.5.0+ (pwsh)  
-> License: MIT  
+devbox-win is an Agentic Dotfiles Hub & Visual Web Studio for Windows 11. It provides declarative, production-tested dotfiles, a client-side Bento Grid configurator, and a self-contained AI prompt manifest (`agent-prompt.md`) for autonomous deployment across Google Antigravity, Cursor, Claude Code, and GitHub Copilot.
 
 ---
 
-## 1. System Overview
-
-devbox-win is a native, zero-dependency declarative developer environment provisioner for Windows 11. It eliminates manual setup, ad-hoc bat files, and bloated third-party orchestration agents by leveraging native Windows 11 tools: WinGet, PowerShell 7+, and unprivileged NTFS symbolic links.
-
-## 2. Directory Structure
+## 1. Directory Structure
 
 ```
-d:\dev\devbox-win\
-├── .github/
-│   ├── workflows/ci.yml         # GitHub Actions CI matrix
-│   ├── ISSUE_TEMPLATE/          # Structured issue templates
-│   └── PULL_REQUEST_TEMPLATE.md # PR guidelines
-├── bootstrap.ps1                # One-liner bootstrap entrypoint
-├── config.yaml                  # Active workstation configuration
-├── config.example.yaml          # Full schema reference with comments
-├── core/
-│   ├── engine.ps1               # Kahn's topological DAG runner & CLI dispatcher
-│   ├── config.ps1               # Robust YAML parser & validator
-│   ├── logger.ps1               # Standardized zero-emoji logger
-│   ├── state.ps1                # Idempotent state management (~/.devbox-win/state.json)
-│   ├── symlink.ps1              # Safe NTFS symlink engine with collision backups
-│   ├── manifest.ps1             # Mutation tracking (~/.devbox-win/manifest.json)
-│   ├── wizard.ps1               # Zero-dependency ANSI keyboard-driven setup wizard
-│   ├── doctor.ps1               # 17-point machine health audit engine
-│   ├── dashboard.ps1            # Edge application-mode HTML companion monitor
-│   ├── backup.ps1               # Disaster recovery & SHA256 snapshot archive
-│   ├── sync.ps1                 # Two-way cross-machine Git sync engine
-│   ├── export.ps1               # Machine reverse-engineering exporter
-│   └── marketplace.ps1          # Dynamic community module loader
-├── dotfiles/
-│   ├── .gitconfig               # Git base configuration
-│   ├── ahk/hotkeys.ahk          # AutoHotkey v2 tiling shortcuts
-│   ├── glazewm/config.yaml      # Live DWM cloaking & Catppuccin lavender border
-│   ├── pwsh/                    # PowerShell 7 profile
-│   ├── starship/starship.toml   # Starship prompt configuration
-│   ├── terminal/settings.json   # Windows Terminal JSON
-│   ├── vscode/                  # VS Code settings, keybindings, extensions
-│   ├── zebar/settings.json      # Zebar v3+ settings
-│   ├── zebar/packs/nord/        # Nord widget pack
-│   └── zed/settings.json        # Curated Zed editor configuration
-├── modules/                     # 12 Topological Provisioner Modules
-│   ├── packages.ps1             # WinGet packages with 180s circuit breaker
-│   ├── fonts.ps1                # Nerd Fonts registration
-│   ├── envvars.ps1              # User environment variables & PATH
-│   ├── git.ps1                  # Git identity & SSH ed25519 keygen
-│   ├── shell.ps1                # Windows Terminal & Starship
-│   ├── editor.ps1               # VS Code & Zed dual synchronization
-│   ├── runtimes.ps1             # Node.js, Python, Rust, .NET SDK
-│   ├── databases.ps1            # PostgreSQL, Docker Desktop, Redis
-│   ├── keybindings.ps1          # PowerToys & AutoHotkey v2
-│   ├── glazewm.ps1              # GlazeWM installation & startup hook
-│   ├── zebar.ps1                # Zebar installation, settings & theme packs
-│   ├── dotfiles.ps1             # Master dotfile symlinker
-│   └── community/               # Community module plugins (gaming, ai-tools)
-├── presets/                     # Curated role-based configuration presets
-│   ├── belal-catppuccin.yaml    # Author's signature rice
-│   ├── fullstack.yaml
-│   ├── frontend.yaml
-│   ├── backend.yaml
-│   ├── devops.yaml
-│   └── minimal.yaml
-├── docs/                        # Promotional Website & GitHub Pages Portal
-│   ├── index.html               # Interactive web configurator & studio
-│   ├── favicon.svg              # 32x32 SVG favicon
-│   ├── robots.txt               # Web crawler directive
-│   ├── sitemap.xml              # XML sitemap
-│   ├── manifest.webmanifest     # PWA metadata
-│   └── assets/                  # SVG logo & OpenGraph banner
-└── tests/
-    └── engine.tests.ps1         # 148 automated unit tests (AAA pattern)
+devbox-win/
+├── configs/
+│   ├── antigravity/
+│   │   ├── rules/user_global.md
+│   │   ├── mcp-config.example.json
+│   │   └── skills/ (38 domain skills)
+│   ├── git/
+│   │   ├── .gitconfig
+│   │   └── .gitignore_global
+│   ├── obsidian/
+│   │   ├── app.json
+│   │   ├── appearance.json
+│   │   ├── community-plugins.json
+│   │   ├── core-plugins.json
+│   │   ├── hotkeys.json
+│   │   ├── snippets/
+│   │   └── plugins/
+│   ├── shortcuts/
+│   │   └── hotkeys.ahk
+│   ├── terminal/
+│   │   ├── windows-terminal.json
+│   │   ├── starship.toml
+│   │   └── Microsoft.PowerShell_profile.ps1
+│   ├── tiling/
+│   │   ├── glazewm/ (config.yaml, telemetry daemons)
+│   │   └── zebar/ (config.yaml, settings.json, packs/nord)
+│   └── vscode/
+│       ├── settings.json
+│       ├── keybindings.json
+│       ├── extensions.txt
+│       └── snippets/
+├── docs/
+│   ├── assets/
+│   │   └── configs-bundle.js
+│   ├── vendor/
+│   │   └── jszip.min.js
+│   ├── index.html
+│   ├── favicon.svg
+│   ├── manifest.webmanifest
+│   ├── robots.txt
+│   └── sitemap.xml
+├── agent-prompt.md
+├── CONTEXT.md
+├── llms.txt
+├── llms-full.txt
+└── README.md
 ```
 
-## 3. CLI Command Reference
+---
 
-```powershell
-# Standard run (uses config.yaml or interactive wizard on first run)
-pwsh -NoProfile -File core/engine.ps1
+## 2. Universal Agent Execution Protocol (`agent-prompt.md`)
 
-# Dry-run execution (evaluates all 12 modules without disk writes)
-pwsh -NoProfile -File core/engine.ps1 -DryRun
+### Phase 1: Pre-Flight Safety & Deterministic Snapshot
+- Inspects target workstation paths.
+- Generates `~/.devbox-backups/backup-<TIMESTAMP>/manifest.json` mapping each backed-up file to its original absolute path.
+- Compresses previous configs to `~/.devbox-backups/backup-<TIMESTAMP>.zip`.
+- Generates `restore.ps1` in the backup directory enabling 1-command rollback.
 
-# Apply specific role preset
-pwsh -NoProfile -File core/engine.ps1 -Preset belal-catppuccin
-pwsh -NoProfile -File core/engine.ps1 -Preset fullstack
+### Phase 2: Configuration Linking & Deployment
+- Checks Windows Developer Mode status.
+- If enabled, creates unprivileged NTFS symbolic links from `configs/<module>` to target paths.
+- If disabled, copies files directly and logs a notice to enable Developer Mode.
+- Deploys VS Code, GlazeWM, Zebar, Windows Terminal, Starship, PowerShell 7, AutoHotkey v2, Git, Antigravity AI, and Obsidian.
 
-# Run specific individual module
-pwsh -NoProfile -File core/engine.ps1 -Module editor
+### Phase 3: Toolchain & Extension Verification
+- Runs `code --install-extension <ext> --force` for all extensions in `configs/vscode/extensions.txt`.
 
-# Interactive First-Time Setup Wizard
-pwsh -NoProfile -File core/wizard.ps1
-pwsh -NoProfile -File core/wizard.ps1 -NonInteractive -OutputPath config.yaml
+### Phase 4: Health Check Audit Table
+- Validates symlink targets and prints formatted status report with color-coded verification indicators.
 
-# Run 17-point machine health diagnostics
-pwsh -NoProfile -File core/doctor.ps1
+---
 
-# Launch Edge companion web dashboard
-pwsh -NoProfile -File core/dashboard.ps1 -Open
+## 3. Visual Web Studio Architecture
 
-# Create compressed SHA256 disaster recovery snapshot
-pwsh -NoProfile -File core/backup.ps1
-
-# Restore workstation state with pre-restore snapshot guard
-pwsh -NoProfile -File core/backup.ps1 -Restore "backup.zip"
-
-# Reverse-engineer currently installed software into config.yaml
-pwsh -NoProfile -File core/export.ps1 -OutputPath "exported_config.yaml"
-
-# Two-way cross-machine Git synchronization
-pwsh -NoProfile -File core/sync.ps1 -Status
-pwsh -NoProfile -File core/sync.ps1 -Push
-pwsh -NoProfile -File core/sync.ps1 -Pull
-
-# Clean rollback (reverts all symlinks to original backups)
-pwsh -NoProfile -File core/engine.ps1 -Uninstall
-```
-
-## 4. Verification Evidence
-- 148 Automated unit tests in `tests/engine.tests.ps1`: 148 passed, 0 failed.
-- 0 AST parser syntax errors across all 31 PowerShell scripts.
-- Strict zero-emoji compliance across all code, logs, and docs.
+- **Static Zero-CORS Design**: Runs on GitHub Pages without backend requirements.
+- **Pre-Indexed Bundle**: All configurations are serialized into `window.DEVBOX_CONFIGS` in `docs/assets/configs-bundle.js`.
+- **In-Memory ZIP Generation**: JSZip v3.10.1 builds customized `.zip` archives directly in browser memory.
+- **OKLCH Dark Palette**: `#0d0e15` base, WCAG AA 4.5:1 contrast compliance, 8px spatial grid, zero emojis (pure SVG vector icons).

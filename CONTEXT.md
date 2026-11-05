@@ -1,35 +1,31 @@
 # Ubiquitous Domain Language: devbox-win
 
-> Purpose: Canonical glossary and bounded context vocabulary for `devbox-win`. Prevents ambiguous terminology across code, issues, and documentation.
+> Purpose: Canonical glossary and bounded context vocabulary for `devbox-win`. Establishes strict domain modeling across code, AI agent instructions, and living documentation.
 
 ---
 
 ## Bounded Domain Terms
 
-### Provisioner
-- **Definition**: The complete engine subsystem responsible for bringing a Windows 11 machine into the desired declarative state defined by `config.yaml`.
-- **_Avoid_**: "installer", "setup wizard", "batch script".
+### Agentic Dotfiles Hub
+- **Definition**: The declarative configuration repository and orchestration suite decoupling workstation dotfiles from brittle procedural scripts, delegating deployment to autonomous AI coding assistants.
+- **_Avoid_**: "installer", "setup wizard", "batch installer", "bash script".
 
-### Module
-- **Definition**: An isolated PowerShell unit under `modules/` with a defined contract, declarative schema, and explicit dependencies evaluated in topological order.
-- **_Avoid_**: "step", "task", "job", "action".
+### Visual Web Studio
+- **Definition**: The client-side, zero-CORS Bento Grid web application (`docs/index.html`) providing real-time inspection, interactive curation, and in-memory JSZip package generation.
+- **_Avoid_**: "marketing page", "landing site", "docs portal".
 
-### Topological DAG (Directed Acyclic Graph)
-- **Definition**: The mathematical ordering model computed via Kahn's algorithm that guarantees prerequisite modules (e.g. `packages`, `fonts`) execute before dependents (e.g. `editor`, `shell`, `dotfiles`).
-- **_Avoid_**: "execution list", "run queue", "pipeline".
+### Universal Agent Prompt Manifest (`agent-prompt.md`)
+- **Definition**: The deterministic 4-phase deployment instruction set provided to AI assistants (Antigravity, Cursor, Claude Code, Copilot) specifying pre-flight snapshots, symlink linking, extension verification, and health audit.
+- **_Avoid_**: "README prompt", "setup guide", "cheatsheet".
+
+### Pre-Flight Snapshot
+- **Definition**: The non-destructive Phase 1 backup procedure creating an atomic `~/.devbox-backups/backup-<TIMESTAMP>.zip` bundle, companion `manifest.json`, and deterministic `restore.ps1`.
+- **_Avoid_**: "manual copy", "ad-hoc backup".
 
 ### Unprivileged Symlink
-- **Definition**: An NTFS symbolic link created without administrative rights using Windows 10/11 Developer Mode (`SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE`).
-- **_Avoid_**: "shortcut", "hard link", "file copy".
+- **Definition**: An NTFS symbolic link created without administrative rights using Windows 10/11 Developer Mode (`SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE`), connecting `configs/<module>` to target machine destinations.
+- **_Avoid_**: "shortcut", "hard link", "duplicate file".
 
-### Signature Rice
-- **Definition**: The author's personal workstation configuration pairing GlazeWM (DWM hardware cloaking + `#cba6f7` Catppuccin lavender borders) with the Nord Zebar widget status bar, Zed editor, and custom AutoHotkey v2 shortcuts.
-- **_Avoid_**: "theme", "skin", "wallpaper".
-
-### Circuit Breaker
-- **Definition**: The 180-second timeout guard wrapping external WinGet package processes that terminates deadlocked installers and logs a non-blocking warning.
-- **_Avoid_**: "retry loop", "sleep timer".
-
-### Mutation Manifest
-- **Definition**: The persistent JSON file at `~/.devbox-win/manifest.json` recording every symlink replacement, real file backup path, and installed package for deterministic `-Uninstall` rollback.
-- **_Avoid_**: "history", "changelog", "audit trail".
+### Curated Module Suite
+- **Definition**: A distinct configuration domain under `configs/` (e.g. `vscode`, `antigravity`, `tiling`, `terminal`, `shortcuts`, `git`, `obsidian`) containing validated JSON/YAML/TOML/Markdown specifications.
+- **_Avoid_**: "folder", "sub-repo".

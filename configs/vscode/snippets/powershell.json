@@ -1,0 +1,34 @@
+{
+  "Script Header": {
+    "prefix": "header",
+    "body": [
+      "# ==============================================================================",
+      "# ${TM_FILENAME}",
+      "# Description: $1",
+      "# Standard: Zero emojis. UTF-8, strict error handling, robust execution.",
+      "# ==============================================================================",
+      "[CmdletBinding()]",
+      "param()",
+      "",
+      "$ErrorActionPreference = 'Stop'",
+      "[Console]::InputEncoding  = [System.Text.Encoding]::UTF8",
+      "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8",
+      "$OutputEncoding           = [System.Text.Encoding]::UTF8",
+      "",
+      "$0"
+    ],
+    "description": "Standard PowerShell script header template"
+  },
+  "Try-Catch Block": {
+    "prefix": "trycatch",
+    "body": [
+      "try {",
+      "    $1",
+      "} catch {",
+      "    Write-Error \"Failed executing operation: $_\"",
+      "    throw $_",
+      "}"
+    ],
+    "description": "Fail-fast try-catch block"
+  }
+}

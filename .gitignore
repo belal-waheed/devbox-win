@@ -3,3 +3,4 @@
 *.tmp
 .devbox-win/
 .vscode/
+.scratch/

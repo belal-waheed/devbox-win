@@ -1,0 +1,49 @@
+{
+  "mcpServers": {
+    "figcraft-designer": {
+      "command": "figcraft-cli",
+      "args": ["mcp"]
+    },
+    "figcraft-diagrams": {
+      "command": "npx",
+      "args": ["-y", "--package=figcraft", "figcraft-mcp"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "mcp-server-neon": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.neon.tech/sse"]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "env": {
+        "PUPPETEER_EXECUTABLE_PATH": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+      }
+    },
+    "resend": {
+      "command": "npx",
+      "args": ["-y", "resend-mcp"],
+      "env": {
+        "RESEND_API_KEY": "${RESEND_API_KEY}"
+      }
+    },
+    "vercel": {
+      "command": "npx",
+      "args": ["-y", "@vineethnkrishnan/vercel-mcp"],
+      "env": {
+        "VERCEL_TOKEN": "${VERCEL_TOKEN}"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "obelisk@@obelisk-no-fullscreen-wide": false,
+  "obelisk@@fullscreen-width": 1100,
+  "encore-settings@@theme-dark": "encore-theme-dark-slate",
+  "encore-settings@@colors": "encore-colors-colorful",
+  "obelisk@@content-width": 920,
+  "obelisk@@highlight-opacity": 50,
+  "obelisk@@obelisk-no-row-stripes": true,
+  "obelisk@@font-size-base": 16,
+  "things-style@@fancy-code": false,
+  "things-style@@fancy-highlight": false,
+  "things-style@@progress-color": false,
+  "things-style@@default-font-color": true,
+  "things-style@@heading-underline-color": true
+}

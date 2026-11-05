@@ -1,0 +1,19 @@
+{
+  "spellcheck": false,
+  "attachmentFolderPath": "system/assets",
+  "newFileLocation": "folder",
+  "newFileFolderPath": "inbox",
+  "openBehavior": "",
+  "alwaysUpdateLinks": true,
+  "readableLineLength": true,
+  "promptDelete": false,
+  "showInlineTitle": true,
+  "showLineNumber": false,
+  "showUnsupportedFiles": true,
+  "pdfExportSettings": {
+    "pageSize": "Letter",
+    "landscape": false,
+    "margin": "0",
+    "downscalePercent": 100
+  }
+}

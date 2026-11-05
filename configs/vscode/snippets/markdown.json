@@ -1,0 +1,34 @@
+{
+  "Callout Note": {
+    "prefix": "callout-note",
+    "body": [
+      "> [!NOTE]",
+      "> $1"
+    ],
+    "description": "GitHub/Obsidian style note callout"
+  },
+  "Callout Important": {
+    "prefix": "callout-important",
+    "body": [
+      "> [!IMPORTANT]",
+      "> $1"
+    ],
+    "description": "GitHub/Obsidian style important callout"
+  },
+  "Callout Tip": {
+    "prefix": "callout-tip",
+    "body": [
+      "> [!TIP]",
+      "> $1"
+    ],
+    "description": "GitHub/Obsidian style tip callout"
+  },
+  "Callout Warning": {
+    "prefix": "callout-warning",
+    "body": [
+      "> [!WARNING]",
+      "> $1"
+    ],
+    "description": "GitHub/Obsidian style warning callout"
+  }
+}

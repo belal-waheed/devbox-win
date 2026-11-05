@@ -1,0 +1,12 @@
+{
+  "cssTheme": "Things",
+  "interfaceFontFamily": "",
+  "textFontFamily": "",
+  "monospaceFontFamily": "",
+  "accentColor": "",
+  "baseFontSize": 16,
+  "enabledCssSnippets": [
+    "wide-content"
+  ],
+  "theme": "moonstone"
+}

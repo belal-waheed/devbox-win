@@ -1,0 +1,41 @@
+/* ========================================================
+   Wider Note Content (Desktop Only) - Obsidian CSS Snippet
+   Expands the note content area (text, headers, properties, code blocks)
+   equally in BOTH Live Preview (Editing Mode) and Reading View.
+   Strictly scoped to desktop (disabled on mobile).
+   ======================================================== */
+
+body:not(.is-mobile) {
+  /* Default Obsidian line width is ~700px.
+     Change this value to adjust the desktop width:
+       - Fluid responsive width: 85% (recommended), 90%, 95%
+       - Fixed pixel width: 1100px, 1200px, 1400px
+       - Full screen width: 100%
+  */
+  --file-line-width: 85%;
+
+  /* Compatibility with community themes (Things theme and others) */
+  --line-width: var(--file-line-width);
+  --line-width-adaptive: var(--file-line-width);
+  --line-width-wide: var(--file-line-width);
+  --max-width: 95%;
+}
+
+/* Sizers (control the maximum centered note column width in both modes) */
+body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .cm-sizer,
+body:not(.is-mobile) .markdown-preview-view.is-readable-line-width .markdown-preview-sizer {
+  max-width: var(--file-line-width) !important;
+}
+
+/* Live Preview (CodeMirror 6) fix:
+   Allow editor lines to expand across the full width of the sizer
+   so percentage or custom widths don't wrap prematurely */
+body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width :is(.cm-line, .cm-content) {
+  max-width: 100% !important;
+}
+
+/* Optional: Frontmatter override for individual full-width notes on desktop */
+body:not(.is-mobile) .full-width {
+  --file-line-width: 100% !important;
+  --line-width: 100% !important;
+}

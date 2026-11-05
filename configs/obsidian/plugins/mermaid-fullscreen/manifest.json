@@ -1,0 +1,9 @@
+{
+  "id": "mermaid-fullscreen",
+  "name": "Mermaid Fullscreen Lightbox",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Click any Mermaid diagram to open in an interactive fullscreen lightbox with smooth pan, zoom, and SVG export.",
+  "author": "Belal Waheed",
+  "isDesktopOnly": false
+}

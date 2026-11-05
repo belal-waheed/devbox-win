@@ -1,0 +1,198 @@
+{
+  "choices": [
+    {
+      "id": "ad5b0404-b36c-4bd3-97ad-9a0585a5e383",
+      "name": "Daily: Open Today",
+      "type": "Macro",
+      "command": true,
+      "macro": {
+        "name": "Daily: Open Today Macro",
+        "id": "c1f19812-70b5-41e9-9fa9-4444c59a0f01",
+        "commands": [
+          {
+            "name": "daily-today.js",
+            "type": "UserScript",
+            "id": "67041a91-499f-4fe1-beeb-6a445d47501b",
+            "path": "system/scripts/daily-today.js",
+            "settings": {}
+          }
+        ]
+      }
+    },
+    {
+      "id": "f82b7c4d-910a-4284-88fe-139048a129ef",
+      "name": "Sprint: New Weekly Sprint",
+      "type": "Template",
+      "command": true,
+      "templatePath": "system/templates/Weekly-Sprint.md",
+      "useTemplater": true,
+      "fileNameFormat": {
+        "enabled": true,
+        "format": "sprints/Week-{{DATE:YYYY-[W]ww}}"
+      },
+      "folder": {
+        "enabled": true,
+        "folders": [
+          "sprints"
+        ],
+        "chooseWhenCreatingNote": false,
+        "createInSameFolderAsActiveFile": false,
+        "chooseFromSubfolders": false
+      },
+      "appendLink": false,
+      "openFile": true,
+      "fileOpening": {
+        "location": "tab",
+        "direction": "vertical",
+        "mode": "default",
+        "focus": true
+      },
+      "fileExistsBehavior": {
+        "kind": "open"
+      }
+    },
+    {
+      "id": "b1630141-3c2f-4e74-aa87-c21344a42c38",
+      "name": "Project: Create Project Hub",
+      "type": "Template",
+      "command": true,
+      "templatePath": "system/templates/Project-Hub.md",
+      "useTemplater": true,
+      "fileNameFormat": {
+        "enabled": true,
+        "format": "projects/{{VALUE:project_name}}/_{{VALUE:project_name}}"
+      },
+      "folder": {
+        "enabled": false,
+        "folders": [
+          "projects"
+        ],
+        "chooseWhenCreatingNote": false,
+        "createInSameFolderAsActiveFile": false,
+        "chooseFromSubfolders": false
+      },
+      "appendLink": false,
+      "openFile": true,
+      "fileOpening": {
+        "location": "tab",
+        "direction": "vertical",
+        "mode": "default",
+        "focus": true
+      },
+      "fileExistsBehavior": {
+        "kind": "prompt"
+      }
+    },
+    {
+      "id": "c3740252-4e85-4b85-9988-fa2455b53d49",
+      "name": "Doc: Add Topic Chapter",
+      "type": "Template",
+      "command": true,
+      "templatePath": "system/templates/Tech-Topic.md",
+      "useTemplater": true,
+      "fileNameFormat": {
+        "enabled": true,
+        "format": "areas/tech/{{VALUE:domain}}/{{VALUE:chapter_title}}"
+      },
+      "folder": {
+        "enabled": false,
+        "folders": [
+          "areas/tech"
+        ],
+        "chooseWhenCreatingNote": false,
+        "createInSameFolderAsActiveFile": false,
+        "chooseFromSubfolders": false
+      },
+      "appendLink": false,
+      "openFile": true,
+      "fileOpening": {
+        "location": "tab",
+        "direction": "vertical",
+        "mode": "default",
+        "focus": true
+      },
+      "fileExistsBehavior": {
+        "kind": "prompt"
+      }
+    },
+    {
+      "id": "e5851363-5f96-4c96-aa99-0b3566c64e50",
+      "name": "Resource: Add Bookmark",
+      "type": "Template",
+      "command": true,
+      "templatePath": "system/templates/Resource.md",
+      "useTemplater": true,
+      "fileNameFormat": {
+        "enabled": true,
+        "format": "resources/bookmarks/{{VALUE:bookmark_name}}"
+      },
+      "folder": {
+        "enabled": true,
+        "folders": [
+          "resources/bookmarks"
+        ],
+        "chooseWhenCreatingNote": false,
+        "createInSameFolderAsActiveFile": false,
+        "chooseFromSubfolders": false
+      },
+      "appendLink": false,
+      "openFile": true,
+      "fileOpening": {
+        "location": "tab",
+        "direction": "vertical",
+        "mode": "default",
+        "focus": true
+      },
+      "fileExistsBehavior": {
+        "kind": "prompt"
+      }
+    }
+  ],
+  "inputPrompt": "single-line",
+  "persistInputPromptDrafts": false,
+  "useSelectionAsCaptureValue": true,
+  "devMode": false,
+  "templateFolderPath": "system/templates",
+  "announceUpdates": "major",
+  "version": "2.12.3",
+  "globalVariables": {},
+  "onePageInputEnabled": false,
+  "disableOnlineFeatures": true,
+  "enableRibbonIcon": false,
+  "showCaptureNotification": false,
+  "showInputCancellationNotification": false,
+  "enableTemplatePropertyTypes": false,
+  "dateAliases": {
+    "t": "today",
+    "tm": "tomorrow",
+    "yd": "yesterday",
+    "nw": "next week",
+    "nm": "next month",
+    "ny": "next year",
+    "lw": "last week",
+    "lm": "last month",
+    "ly": "last year"
+  },
+  "ai": {
+    "defaultModel": "Ask me",
+    "defaultSystemPrompt": "As an AI assistant within Obsidian, your primary goal is to help users manage their ideas and knowledge more effectively.",
+    "promptTemplatesFolderPath": "",
+    "showAssistant": false,
+    "providers": []
+  },
+  "migrations": {
+    "migrateToMacroIDFromEmbeddedMacro": true,
+    "useQuickAddTemplateFolder": true,
+    "incrementFileNameSettingMoveToDefaultBehavior": true,
+    "consolidateFileExistsBehavior": true,
+    "repairTemplateFileExistsBehavior": true,
+    "mutualExclusionInsertAfterAndWriteToBottomOfFile": true,
+    "setVersionAfterUpdateModalRelease": true,
+    "addDefaultAIProviders": true,
+    "removeMacroIndirection": true,
+    "migrateFileOpeningSettings": true,
+    "backfillFileOpeningDefaults": true,
+    "setProviderModelDiscoveryMode": true,
+    "migrateProviderApiKeysToSecretStorage": true
+  }
+}
